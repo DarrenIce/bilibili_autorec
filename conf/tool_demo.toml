@@ -1,0 +1,22 @@
+# 全局设置
+[global]
+https = true # 使用HTTPS协议
+process = 4 # 进程数
+log = "bilibili.log" # 日志文件名
+
+# 代理设置
+[proxy]
+enable = true # 开关
+pool = "proxy.txt" # 代理池，这个不用管，实际并没有用到
+
+# 用户设置
+[user]
+update = true # 自动更新凭据
+force_refresh_token = true # 强制刷新Token
+account = """
+username=我怎么知道;password=我怎么知道;
+"""
+# 请在上方填写您的账号凭据, 每一条凭据应至少包含下述三种身份校验方式之一的完整键值对:
+# Password: username=...;password=...;
+# Token: access_token=...;refresh_token=...;
+# Cookie: bili_jct=...;DedeUserID=...;DedeUserID__ckMd5=...;sid=...;SESSDATA=...;
