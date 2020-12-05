@@ -21,7 +21,7 @@ class Log():
                 if Log._first_init:
                     Log._first_init=False
                     self.logger = logging.getLogger()
-                    self.logger.setLevel(logging.INFO)
+                    self.logger.setLevel(logging.DEBUG)
                     fh = logging.FileHandler(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'log','log.log'),mode='a',encoding='utf-8')
                     formatter = logging.Formatter('%(asctime)s\t%(filename)s[line:%(lineno)d]\t%(levelname)s\t%(message)s')
                     fh.setFormatter(formatter)

@@ -10,15 +10,21 @@ def main():
         os.mkdir(log_path)
         log_file = os.path.join(log_path,'log.log')
         stream_log_file = os.path.join(log_path,'stream.log')
+        ffmpeg_log_file = os.path.join(log_path,'ffmpeg.log')
         with open(log_file,'w',encoding='utf-8') as a:
             pass
         with open(stream_log_file,'w',encoding='utf-8') as a:
+            pass
+        with open(ffmpeg_log_file,'w',encoding='utf-8') as a:
             pass
     live = Live()
     live.run()
 
 if __name__ == '__main__':
     main()
+    # live = Live()
+    # live.download_live('13328782')
+    # live.flv2mp4('22600427')
     # console.print(live.get_room_info('2603963'))
     # print(os.path.dirname(os.path.realpath(__file__)))
     # print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))

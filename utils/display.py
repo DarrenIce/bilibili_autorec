@@ -2,7 +2,6 @@ import time
 import datetime
 from utils.rich.live import Live
 from utils.rich.table import Table
-from utils.rich.control import Control
 from utils.rich.console import Console
 from typing_extensions import Literal
 from dataclasses import dataclass
@@ -61,9 +60,11 @@ class Display():
         )
 
     def create_info_table(self,live_infos):
+        dct = {0:0,1:100,2:50}
         infos = sorted(
             [self.generate_info(rid,live_infos[key]) for key,rid in zip(live_infos.keys(),range(len(live_infos)))],
-            key = lambda i: i.row_id
+            key = lambda i: dct[i.live_status] + 30 * i.record_status - i.row_id,
+            reverse=True
         )
         table = Table(
             "行号","房间ID","主播","直播标题","直播状态","录制状态","开播时间","录制时长",title="监控面板 %s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
