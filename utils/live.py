@@ -1,18 +1,15 @@
 import os
-import re
 import time
 import datetime
 import threading
-import subprocess
 import streamlink
-import utils.bilibili_api
 from utils.log import Log
 from utils.tools import login
-from utils.upload import Upload
 from utils.rich.console import Console
 from utils.display import Display
 from utils.load_conf import Config
-from utils.bilibili_api import live, user, Verify
+from utils.decoder import Decoder
+from utils.bilibili_api import live
 
 console = Console()
 headers = {
@@ -40,6 +37,12 @@ TODO:
 实时监测cfg                             √
 优化日志逻辑
 优化保存路径
+去掉starttime这个key，改成每个主播的直播时长 maxsecond
+确认真正下播逻辑，然后再执行转码，不然CPU扛不住了   --  限制了下播逻辑，正在确认准确性
+或者设置一个转码队列，按顺序进行转码
+live_info加一个key,base_path = self.base_path，可以一直更新
+live_info加一个key,cookies
+转码队列可以去掉uname和filename相同的过早项
 '''
 
 
@@ -48,11 +51,11 @@ class Live():
         self.config = Config()
         self.cookies = login()
         logger.info(self.cookies)
-        self.verify = Verify(sessdata=self.cookies['SESSDATA'], csrf=self.cookies['bili_jct'])
         self.base_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
                                       self.config.config['output']['path'])
         self.live_infos = {}
         self.display = Display()
+        self.decoder = Decoder()
         logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
@@ -66,7 +69,9 @@ class Live():
                 self.live_infos[str(lst[0])]['record_start_time'] = ''
             self.live_infos[str(lst[0])]['need_rec'] = str(lst[1])
             self.live_infos[str(lst[0])]['need_mask'] = str(lst[2])
-            self.live_infos[str(lst[0])]['starttime'] = str(lst[3])
+            self.live_infos[str(lst[0])]['maxsecond'] = str(lst[3])
+            self.live_infos[str(lst[0])]['cookies'] = self.cookies
+            self.live_infos[str(lst[0])]['base_path'] = self.base_path
 
     def load_realtime(self):
         self.config.load_cfg()
@@ -88,7 +93,7 @@ class Live():
             info = None
             while info is None:
                 try:
-                    info = live.get_room_info(id, verify=self.verify, cookies=self.cookies)
+                    info = live.get_room_info(id, cookies=self.cookies)
                     time.sleep(0.3)
                 except:
                     logger.error('%s[RoomID:%s]获取信息失败，重新尝试' % (self.live_infos[id]['uname'], id))
@@ -130,7 +135,7 @@ class Live():
                 logger.warning('%s[RoomID:%s]获取直播流失败，正在重试' % (self.live_infos[key]['uname'], key))
                 time.sleep(1)
         if streams == {}:
-            logger.error('%s[RoomID:%s]下播了' % (self.live_infos[key]['uname'], key))
+            logger.error('%s[RoomID:%s]未获取到直播流，可能是下播或者网络问题' % (self.live_infos[key]['uname'], key))
             return None
         if 'best' in streams:
             logger.info('%s[RoomID:%s]获取到best直播流' % (self.live_infos[key]['uname'], key))
@@ -145,17 +150,17 @@ class Live():
             logger.info('%s[RoomID:%s]未获取到直播流' % (self.live_infos[key]['uname'], key))
             return None
 
-    def unlive(self,key):
-        logger.info('%s[RoomID:%s]下播了' % (self.live_infos[key]['uname'], key))
+    def unlive(self,key,unlived):
+        logger.info('%s[RoomID:%s]似乎下播了' % (self.live_infos[key]['uname'], key))
         self.live_infos[key]['recording'] = False
         logger.info('%s[RoomID:%s]录制结束，录制了%.2f分钟' % (self.live_infos[key]['uname'], key, (
                 datetime.datetime.now() - datetime.datetime.strptime(
             self.live_infos[key]['record_start_time'],
             '%Y-%m-%d %H:%M:%S')).total_seconds() / 60.0))
         self.live_infos[key]['record_start_time'] = ''
-        logger.info('%s[RoomID:%s]确认下播，开始转码上传' % (self.live_infos[key]['uname'], key))
-        filepath, filename = self.flv2mp4(key)
-        # Upload(self.live_infos[key]['uname'],key,filepath,filename,self.verify).upload()
+        if unlived:
+            logger.info('%s[RoomID:%s]确认下播，加入转码上传队列' % (self.live_infos[key]['uname'], key))
+            self.decoder.enqueue(self.live_infos[key])
 
     def download_live(self, key):
         if key not in self.live_infos:
@@ -187,24 +192,28 @@ class Live():
                             logger.warning('%s[RoomID:%s]直播流断开,尝试重连' % (self.live_infos[key]['uname'], key))
                             stream = self.get_stream(key)
                             if stream is None:
-                                self.unlive(key)
+                                logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos[key]['uname'], key))
+                                self.unlive(key,True)
                                 return
                             else:
                                 logger.info('%s[RoomID:%s]重连成功' % (self.live_infos[key]['uname'], key))
                                 fd = stream.open()
                     except Exception as e:
                         fd.close()
-                        logger.info('%s[RoomID:%s]遇到了什么问题' % (self.live_infos[key]['uname'], key))
-                        self.unlive(key)
+                        logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos[key]['uname'], key))
+                        self.unlive(key,True)
                         logger.error(e)
                         raise e
             fd.close()
-            self.unlive(key)
+            self.unlive(key,True)
 
     def run(self):
         a = threading.Thread(target=self.display.run)
         a.setDaemon(True)
         a.start()
+        d = threading.Thread(target=self.decoder.run)
+        d.setDaemon(True)
+        d.start()
         while True:
             self.load_realtime()
             self.get_live_url()
@@ -216,94 +225,88 @@ class Live():
                 time.sleep(0.2)
             time.sleep(1)
 
-    def flv2mp4(self, key):
-        '''
-        当前逻辑是
-        从最近的一个flv文件向前数12小时，合并所有录播
-        先把每个flv转ts，再ts合MP4
-        最后给视频加黑色遮挡
-        '''
-        save_path = os.path.join(self.base_path, self.live_infos[key]['uname'])
-        time_lst = []
-        flst = []
-        for f in os.listdir(os.path.join(save_path, 'recording')):
-            if 'flv' in f:
-                flst.append(f)
-        flst = sorted(flst, key=lambda x: x.split('_')[-1].split('.')[0])
-        for f in flst:
-            time_lst.append(datetime.datetime.fromtimestamp(os.stat(os.path.join(save_path, 'recording', f)).st_mtime))
-        latest_time = time_lst[-1]
-        input_file = []
-        for f, t in zip(flst, time_lst):
-            if (latest_time - t).total_seconds() < int(self.config.config['live']['maxsecond']):
-                input_file.append(f)
-
-        output_file = re.search(r'.*?_\d{8}', input_file[0]).group() + '.mp4'
-        filename = ''.join(output_file.replace('.mp4', '').split('_'))
-
-        logger.info(
-            '%s[RoomID:%s]本次录制文件:%s\t最终上传:%s' % (self.live_infos[key]['uname'], key, ' '.join(input_file), filename))
-
-        output_lst = []
-        for i in input_file:
-            output_lst.append(os.path.join(save_path, 'recording', i.replace('.flv', '.ts')))
-
-        for i in range(len(input_file)):
-            input_file[i] = '-i ' + os.path.join(save_path, 'recording', input_file[i])
-
-        output_file = os.path.join(save_path, output_file)
-        ffmpeg_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffmpeg', 'bin', 'ffmpeg.exe')
-        ffmpeg_log = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'ffmpeg.log')
-
-        for i, o in zip(input_file, output_lst):
-            command = [
-                ffmpeg_path,
-                i,
-                '-c', 'copy',
-                '-bsf:v', 'h264_mp4toannexb',
-                '-f', 'mpegts',
-                '-y',
-                o
-            ]
-            # print(' '.join(command))
-            subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
-
-        op_cmd = '\"%s\"' % ('concat:' + '|'.join(output_lst))
-
-        command = [
-            ffmpeg_path,
-            '-i', op_cmd,
-            '-c', 'copy',
-            '-bsf:a', 'aac_adtstoasc',
-            '-movflags', '+faststart',
-            '-y',
-            output_file
-        ]
-        subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
-
-        for tsop in output_lst:
-            os.remove(tsop)
-            logger.info('%s has been removed.' % tsop)
-
-        if self.live_infos[key]['need_mask'] == '1':
-            mask_path = os.path.join(self.base_path, 'mask.jpg')
-            output_file2 = output_file.replace('.mp4', '') + '_mask.mp4'
-            command = [
-                ffmpeg_path,
-                '-i', output_file,
-                '-i', mask_path,
-                '-filter_complex', 'overlay',
-                '-ac', '2',
-                '-ab', '300000',
-                '-y',
-                output_file2
-            ]
-            subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
-            logger.info('%s[RoomID:%s]转码完成' % (self.live_infos[key]['uname'], key))
-            return output_file2, filename
-
-        logger.info('%s[RoomID:%s]转码完成' % (self.live_infos[key]['uname'], key))
-        return output_file, filename
+    # def flv2mp4(self, key):
+    #     save_path = os.path.join(self.base_path, self.live_infos[key]['uname'])
+    #     time_lst = []
+    #     flst = []
+    #     for f in os.listdir(os.path.join(save_path, 'recording')):
+    #         if 'flv' in f:
+    #             flst.append(f)
+    #     flst = sorted(flst, key=lambda x: x.split('_')[-1].split('.')[0])
+    #     for f in flst:
+    #         time_lst.append(datetime.datetime.fromtimestamp(os.stat(os.path.join(save_path, 'recording', f)).st_mtime))
+    #     latest_time = time_lst[-1]
+    #     input_file = []
+    #     for f, t in zip(flst, time_lst):
+    #         if (latest_time - t).total_seconds() < int(self.config.config['live']['maxsecond']):
+    #             input_file.append(f)
+    #
+    #     output_file = re.search(r'.*?_\d{8}', input_file[0]).group() + '.mp4'
+    #     filename = ''.join(output_file.replace('.mp4', '').split('_'))
+    #
+    #     logger.info(
+    #         '%s[RoomID:%s]本次录制文件:%s\t最终上传:%s' % (self.live_infos[key]['uname'], key, ' '.join(input_file), filename))
+    #
+    #     output_lst = []
+    #     for i in input_file:
+    #         output_lst.append(os.path.join(save_path, 'recording', i.replace('.flv', '.ts')))
+    #
+    #     for i in range(len(input_file)):
+    #         input_file[i] = '-i ' + os.path.join(save_path, 'recording', input_file[i])
+    #
+    #     output_file = os.path.join(save_path, output_file)
+    #     ffmpeg_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffmpeg', 'bin', 'ffmpeg.exe')
+    #     ffmpeg_log = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'ffmpeg.log')
+    #
+    #     for i, o in zip(input_file, output_lst):
+    #         command = [
+    #             ffmpeg_path,
+    #             i,
+    #             '-c', 'copy',
+    #             '-bsf:v', 'h264_mp4toannexb',
+    #             '-f', 'mpegts',
+    #             '-y',
+    #             o
+    #         ]
+    #         # print(' '.join(command))
+    #         subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
+    #
+    #     op_cmd = '\"%s\"' % ('concat:' + '|'.join(output_lst))
+    #
+    #     command = [
+    #         ffmpeg_path,
+    #         '-i', op_cmd,
+    #         '-c', 'copy',
+    #         '-bsf:a', 'aac_adtstoasc',
+    #         '-movflags', '+faststart',
+    #         '-y',
+    #         output_file
+    #     ]
+    #     subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
+    #
+    #     for tsop in output_lst:
+    #         os.remove(tsop)
+    #         logger.info('%s has been removed.' % tsop)
+    #
+    #     if self.live_infos[key]['need_mask'] == '1':
+    #         mask_path = os.path.join(self.base_path, 'mask.jpg')
+    #         output_file2 = output_file.replace('.mp4', '') + '_mask.mp4'
+    #         command = [
+    #             ffmpeg_path,
+    #             '-i', output_file,
+    #             '-i', mask_path,
+    #             '-filter_complex', 'overlay',
+    #             '-ac', '2',
+    #             '-ab', '300000',
+    #             '-y',
+    #             output_file2
+    #         ]
+    #         subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
+    #         logger.info('%s[RoomID:%s]转码完成' % (self.live_infos[key]['uname'], key))
+    #         return output_file2, filename
+    #
+    #     logger.info('%s[RoomID:%s]转码完成' % (self.live_infos[key]['uname'], key))
+    #     return output_file, filename
         # print(' '.join(command))
 
 # l = Live()

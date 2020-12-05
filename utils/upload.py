@@ -4,16 +4,16 @@ from utils.bilibili_api import video
 logger = Log()()
 
 class Upload():
-    def __init__(self,uname,roomid,filepath,filename,verify):
+    def __init__(self,uname,roomid,filepath,filename,cookies):
         self.uname = uname
         self.roomid = roomid
         self.filepath = filepath
         self.filename = filename
-        self.verify = verify
+        self.cookies = cookies
 
     def upload(self):
         logger.info('%s[RoomID:%s]开始本次上传' % (self.uname,self.roomid))
-        filename = video.video_upload(self.filepath,verify=self.verify)
+        filename = video.video_upload(self.filepath,cookies=self.cookies)
         data = {
             "copyright": 2,
             "source": "https://live.bilibili.com/%s" % self.roomid,
@@ -38,5 +38,5 @@ class Upload():
                 }
             ]
         }
-        result = video.video_submit(data,verify=self.verify)
+        result = video.video_submit(data,cookies=self.cookies)
         logger.info('上传结果: %s' % (result))

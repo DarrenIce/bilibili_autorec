@@ -867,7 +867,7 @@ def share_to_dynamic(content: str, bvid: str = None, aid: int = None, verify: ut
 
 # 视频上传三步
 
-def video_upload(path: str, verify: utils.Verify, on_progress=None):
+def video_upload(path: str, verify: utils.Verify, cookies, on_progress=None):
     """
     上传视频
     :param on_progress: 进度回调，数据格式：{"event": "事件名", "ok": "是否成功", "data": "附加数据"}
@@ -880,7 +880,7 @@ def video_upload(path: str, verify: utils.Verify, on_progress=None):
         raise exceptions.BilibiliApiException("on_progress 参数必须是个方法")
     session = requests.session()
     session.headers = utils.DEFAULT_HEADERS
-    requests.utils.add_dict_to_cookiejar(session.cookies, verify.get_cookies())
+    requests.utils.add_dict_to_cookiejar(session.cookies, cookies)
     if not os.path.exists(path):
         raise exceptions.UploadException("视频路径不存在")
     total_size = os.stat(path).st_size
@@ -962,7 +962,7 @@ def video_upload(path: str, verify: utils.Verify, on_progress=None):
             task_chunks.append(this_task_chunks)
         task_chunks[-1] += (chunks_settings[-remain:])
 
-        async with aiohttp.ClientSession(headers={'X-Upos-Auth': settings['auth']}, cookies=verify.get_cookies()) as sess:
+        async with aiohttp.ClientSession(headers={'X-Upos-Auth': settings['auth']}, cookies=cookies) as sess:
             while True:
                 # 循环上传
                 coroutines = []
@@ -1037,7 +1037,7 @@ def video_cover_upload(path, verify: utils.Verify):
     return cover_url
 
 
-def video_submit(data: dict, verify: utils.Verify):
+def video_submit(data: dict, verify: utils.Verify, cookies):
     """
     提交投稿信息
     :param data: 投稿信息
@@ -1071,10 +1071,10 @@ def video_submit(data: dict, verify: utils.Verify):
     """
     url = "https://member.bilibili.com/x/vu/web/add"
     params = {
-        "csrf": verify.csrf
+        "csrf": cookies['bili_jct']
     }
     payload = json.dumps(data, ensure_ascii=False).encode()
-    resp = utils.post(url, params=params, data=payload, data_type="json", cookies=verify.get_cookies())
+    resp = utils.post(url, params=params, data=payload, data_type="json", cookies=cookies)
     return resp
 
 
