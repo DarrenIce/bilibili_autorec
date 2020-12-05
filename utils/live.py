@@ -39,7 +39,7 @@ TODO:
 声音压得有点厉害，需要调一下参数            √
 实时监测cfg                             √
 优化日志逻辑
-优化保存路径，
+优化保存路径
 '''
 
 
@@ -104,7 +104,7 @@ class Live():
             self.live_infos[id]['live_start_time'] = info['room_info']['live_start_time']
             if 'recording' not in self.live_infos[id]:
                 self.live_infos[id]['recording'] = False
-            logger.info(
+            logger.debug(
                 '%s[RoomID:%s]直播状态\t%s' % (self.live_infos[id]['uname'], id, self.live_infos[id]['live_status']))
             self.display.refresh_info(self.live_infos)
 
