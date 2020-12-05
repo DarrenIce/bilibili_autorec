@@ -47,25 +47,35 @@ class Display():
         self.console._environ['TERM'] = 'SMART'     
 
     def generate_info(self,row_id: int,live_info: dict) -> Info:
-        return Info(
-            row_id = row_id,
-            room_id = live_info['room_id'],
-            anchor = live_info['uname'],
-            title = live_info['title'],
-            live_status = live_info['live_status'],
-            record_status = live_info['recording'],
-            start_time = datetime.datetime.fromtimestamp(live_info['live_start_time']).strftime('%Y-%m-%d %H:%M:%S'),
-            record_start_time = live_info['record_start_time'],
-            # live_url = live_info['live_url']
-        )
+        info = None
+        while info is None:
+            try:
+                info = Info(
+                    row_id = row_id,
+                    room_id = live_info['room_id'],
+                    anchor = live_info['uname'],
+                    title = live_info['title'],
+                    live_status = live_info['live_status'],
+                    record_status = live_info['recording'],
+                    start_time = datetime.datetime.fromtimestamp(live_info['live_start_time']).strftime('%Y-%m-%d %H:%M:%S'),
+                    record_start_time = live_info['record_start_time']
+                    )
+            except:
+                continue
+        return info
 
     def create_info_table(self,live_infos):
         dct = {0:0,1:100,2:50}
-        infos = sorted(
-            [self.generate_info(rid,live_infos[key]) for key,rid in zip(live_infos.keys(),range(len(live_infos)))],
-            key = lambda i: dct[i.live_status] + 30 * i.record_status - i.row_id,
-            reverse=True
-        )
+        infos = None
+        while infos is None:
+            try:
+                infos = sorted(
+                    [self.generate_info(rid,live_infos[key]) for key,rid in zip(live_infos.keys(),range(len(live_infos)))],
+                    key = lambda i: dct[i.live_status] + 30 * i.record_status - i.row_id,
+                    reverse=True
+                )
+            except:
+                continue
         table = Table(
             "行号","房间ID","主播","直播标题","直播状态","录制状态","开播时间","录制时长",title="监控面板 %s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
