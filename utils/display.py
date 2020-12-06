@@ -44,7 +44,7 @@ class Info:
     def record_time(self) -> str:
         if self.record_start_time != '':
             return '%.2f min' % ((datetime.datetime.now() - datetime.datetime.strptime(self.record_start_time,
-                                                                                       '%Y-%m-%d %H:%M:%S')).total_seconds / 60.0)
+                                                                                       '%Y-%m-%d %H:%M:%S')).total_seconds() / 60.0)
         else:
             return '0s'
 

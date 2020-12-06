@@ -4,6 +4,7 @@ import datetime
 import threading
 import streamlink
 from utils.log import Log
+from utils.upload import Upload
 from utils.tools import login
 from utils.rich.console import Console
 from utils.display import Display
@@ -59,6 +60,7 @@ class Live():
         self.live_infos = {}
         self.display = Display()
         self.decoder = Decoder()
+        self.upload = Upload()
         logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
@@ -132,7 +134,7 @@ class Live():
                     info = live.get_room_info(id, cookies=self.cookies)
                     time.sleep(0.3)
                 except:
-                    logger.error('%s[RoomID:%s]获取信息失败，重新尝试' % (self.live_infos[id]['uname'], id))
+                    logger.error('[RoomID:%s]获取信息失败，重新尝试' % (id))
                     continue
             self.live_infos[id]['room_id'] = id
             self.live_infos[id]['real_id'] = info['room_info']['room_id']
@@ -167,6 +169,7 @@ class Live():
         '''
         if key not in self.live_infos:
             return None
+        logger.info('%s[RoomID:%s]获取直播流' % (self.live_infos[key]['uname'], key))
         session = streamlink.Streamlink()
         session.set_option("http-cookies", self.cookies)
         session.set_option("http-headers", headers)
@@ -207,9 +210,21 @@ class Live():
         if unlived:
             logger.info('%s[RoomID:%s]确认下播，加入转码上传队列' % (self.live_infos[key]['uname'], key))
             self.decoder.enqueue(self.live_infos[key])
+            if self.live_infos[key]['upload'] == '1':
+                self.live_infos[key]['filename'] = self.live_infos[key]['uname']+self.live_infos[key]['duration'].split('-')[0].split(' ')[0]
+                self.live_infos[key]['filepath'] = os.path.join(self.base_path,self.live_infos[key]['uname'],'%s_%s' % (self.live_infos[key]['uname'],self.live_infos[key]['duration'].split('-')[0].split(' ')[0]))
+                if self.live_infos[key]['need_mask'] == '1':
+                    self.live_infos[key]['filepath']+='_mask.mp4'
+                else:
+                    self.live_infos[key]['filepath'] +='.mp4'
+                self.upload.enqueue(self.live_infos[key])
 
     def download_live(self, key):
         if key not in self.live_infos:
+            return
+
+        if self.live_infos[key]['live_status'] != 1:
+            self.live_infos[key]['recording'] = 0
             return
 
         if not self.check_live(key) and self.live_infos[key]['live_status'] == 1:
@@ -271,11 +286,15 @@ class Live():
         d = threading.Thread(target=self.decoder.run)
         d.setDaemon(True)
         d.start()
+        u = threading.Thread(target=self.upload.run)
+        u.setDaemon(True)
+        u.start()
         while True:
             self.load_realtime()
             self.get_live_url()
+            self.upload.remove(self.live_infos)
             for key in self.live_infos:
-                if not self.live_infos[key]['recording']:
+                if self.live_infos[key]['recording'] != 1:
                     t = threading.Thread(target=self.download_live, args=[key, ])
                     t.setDaemon(True)
                     t.start()

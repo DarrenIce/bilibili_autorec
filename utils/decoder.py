@@ -4,7 +4,6 @@ import threading
 import os
 import re
 import datetime
-from utils.upload import Upload
 
 logger = Log()()
 
@@ -14,7 +13,6 @@ class Decoder():
         self._lock = threading.Lock()
         self._lock2 = threading.Lock()
         self.decode_queue = []
-        self.upload = Upload()
 
     def decode(self, live_info):
         '''
@@ -112,8 +110,7 @@ class Decoder():
             logger.info('%s 开始转码' % (live_info['uname']))
             # 这两个参数存到live_info里
             live_info['filepath'], live_info['filename'] = self.decode(live_info)
-            if live_info['upload'] == '1':
-                self.upload.enqueue(live_info)
+
 
     def enqueue(self, live_info):
         with self._lock:
@@ -144,9 +141,6 @@ class Decoder():
                     return None
 
     def run(self):
-        u = threading.Thread(target=self.upload.run)
-        u.setDaemon(True)
-        u.start()
         while True:
             if len(self.decode_queue) > 0:
                 live_info = self.dequeue()

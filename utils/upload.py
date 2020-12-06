@@ -85,3 +85,15 @@ class Upload():
                         t.setDaemon(True)
                         t.start()
                     time.sleep(1)
+
+    def remove(self,live_infos):
+        with self._lock:
+            unames = {}
+            for i in range(len(self.upload_queue)):
+                unames[self.upload_queue[i]['uname']] = i
+            for key in live_infos:
+                if live_infos[key]['uname'] in unames:
+                    del self.upload_queue[unames[live_infos[key]['uname']]]
+                    logger.info('%s正在直播，移出上传队列' % live_infos[key]['uname'])
+                    unames = [i['uname'] for i in self.upload_queue]
+                    logger.info('当前上传队列情况: %s' % (' '.join(unames)))
