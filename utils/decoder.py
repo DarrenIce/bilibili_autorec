@@ -108,7 +108,8 @@ class Decoder():
         with self._lock2:
             logger.info('%s 开始转码' % (live_info['uname']))
             filepath, filename = self.decode(live_info)
-            # Upload(live_info['uname'],live_info['room_id'],filepath,filename,live_info['cookies']).upload()
+            if live_info['upload'] == '1':
+                Upload(live_info['uname'],live_info['room_id'],filepath,filename,live_info['cookies']).upload()
 
     def enqueue(self,live_info):
         with self._lock:

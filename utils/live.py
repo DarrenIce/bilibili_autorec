@@ -37,12 +37,12 @@ TODO:
 实时监测cfg                             √
 优化日志逻辑
 优化保存路径
-去掉starttime这个key，改成每个主播的直播时长 maxsecond
-确认真正下播逻辑，然后再执行转码，不然CPU扛不住了   --  限制了下播逻辑，正在确认准确性
-或者设置一个转码队列，按顺序进行转码
-live_info加一个key,base_path = self.base_path，可以一直更新
-live_info加一个key,cookies
-转码队列可以去掉uname和filename相同的过早项
+去掉starttime这个key，改成每个主播的直播时长 maxsecond      √
+确认真正下播逻辑，然后再执行转码，不然CPU扛不住了   --  限制了下播逻辑，正在确认准确性        √
+或者设置一个转码队列，按顺序进行转码      √
+live_info加一个key,base_path = self.base_path，可以一直更新       √
+live_info加一个key,cookies     √
+转码队列可以去掉uname和filename相同的过早项        √
 '''
 
 
@@ -70,6 +70,7 @@ class Live():
             self.live_infos[str(lst[0])]['need_rec'] = str(lst[1])
             self.live_infos[str(lst[0])]['need_mask'] = str(lst[2])
             self.live_infos[str(lst[0])]['maxsecond'] = str(lst[3])
+            self.live_infos[str(lst[0])]['upload'] = str(lst[4])
             self.live_infos[str(lst[0])]['cookies'] = self.cookies
             self.live_infos[str(lst[0])]['base_path'] = self.base_path
 

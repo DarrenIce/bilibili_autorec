@@ -1,6 +1,6 @@
 # bilibili_autorec  哔哩哔哩自动录播机
 
-## README正在施工中...
+## README基本完工
 
 ## 功能
 
@@ -13,7 +13,7 @@
 
 1. 下载[ffmpeg](https://www.gyan.dev/ffmpeg/builds/)，下载ffmpeg-release-full版本，解压后重命名为ffmpeg，放在utils路径下
 2. pip install streamlink
-3. 根据提示修改两个demo配置文件
+3. 根据提示修改demo配置文件，并且把_demo删去，修改配置文件名为tool.toml
 4. python main.py
 
 ## 用到的开源项目
