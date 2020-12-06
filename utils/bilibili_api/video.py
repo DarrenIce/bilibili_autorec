@@ -378,6 +378,7 @@ def operate_favorite(bvid: str = None, aid: int = None, add_media_ids: list = No
     resp = common.operate_favorite(aid, "video", add_media_ids, del_media_ids, verify)
     return resp
 
+
 # 弹幕相关
 
 
@@ -432,7 +433,7 @@ def get_danmaku(bvid: str = None, aid: int = None, page: int = 0,
                     offset += 1
                     dm_data_length, l = utils.read_varint(data[offset:])
                     offset += l
-                    real_data = data[offset:offset+dm_data_length]
+                    real_data = data[offset:offset + dm_data_length]
                     dm_data_offset = 0
 
                     while dm_data_offset < dm_data_length:
@@ -605,7 +606,8 @@ def has_liked_danmaku(dmid, oid: int, verify: utils.Verify = None):
 
     api = API['video']['danmaku']['has_liked_danmaku']
     params = {
-        "ids": dmid if type(dmid) == int else ",".join(list(map(lambda id_: str(id_), dmid))) if type(dmid) == list else None,
+        "ids": dmid if type(dmid) == int else ",".join(list(map(lambda id_: str(id_), dmid))) if type(
+            dmid) == list else None,
         "oid": oid,
     }
     if params['ids'] is None:
@@ -943,7 +945,8 @@ def video_upload(path: str, cookies, on_progress=None):
         with open(path, 'rb') as f:
             for chunk in chunks:
                 f.seek(chunk['start'], 0)
-                async with sess.put(upload_url, params=chunk, data=f.read(chunk['size']), headers=utils.DEFAULT_HEADERS) as r:
+                async with sess.put(upload_url, params=chunk, data=f.read(chunk['size']),
+                                    headers=utils.DEFAULT_HEADERS) as r:
                     if r.status != 200:
                         if on_progress:
                             on_progress({"event": "UPLOAD_CHUNK", "ok": False, "data": chunk})
@@ -958,7 +961,7 @@ def video_upload(path: str, cookies, on_progress=None):
         remain = len(chunks_settings) % settings['threads']
         task_chunks = []
         for i in range(settings['threads']):
-            this_task_chunks = chunks_settings[i*chunks_per_thread:(i+1)*chunks_per_thread]
+            this_task_chunks = chunks_settings[i * chunks_per_thread:(i + 1) * chunks_per_thread]
             task_chunks.append(this_task_chunks)
         task_chunks[-1] += (chunks_settings[-remain:])
 
@@ -1084,6 +1087,7 @@ def connect_all_VideoOnlineMonitor(*args):
         for a in args:
             coroutines.append(a.connect(True))
         await asyncio.gather(*coroutines)
+
     asyncio.get_event_loop().run_until_complete(main())
     asyncio.get_event_loop().run_forever()
 
@@ -1182,7 +1186,8 @@ class VideoOnlineMonitor:
                         if self.__is_single_room:
                             asyncio.get_event_loop().stop()
                     if callable(self.event_handler):
-                        self.event_handler({'type': 'DISCONNECT', 'bvid': self.bvid, 'aid': self.aid, 'data': self.__connected_status})
+                        self.event_handler(
+                            {'type': 'DISCONNECT', 'bvid': self.bvid, 'aid': self.aid, 'data': self.__connected_status})
                     if self.__heart_beat_task is not None:
                         self.__heart_beat_task.cancel()
                     break
@@ -1198,7 +1203,8 @@ class VideoOnlineMonitor:
                         self.logger.debug(f'收到服务器心跳包反馈，编号：{d["number"]}')
                         self.logger.info(f'实时观看人数：{d["data"]["data"]["room"]["online"]}')
                         if callable(self.event_handler):
-                            self.event_handler({'type': 'ONLINE', 'bvid': self.bvid, 'aid': self.aid, 'data': d['data']['data']})
+                            self.event_handler(
+                                {'type': 'ONLINE', 'bvid': self.bvid, 'aid': self.aid, 'data': d['data']['data']})
                     elif d['type'] == self.DATAPACK_DANMAKU:
                         info = d['data'][0].split(",")
                         text = d['data'][1]
@@ -1226,7 +1232,8 @@ class VideoOnlineMonitor:
         while self.__connected_status == 1:
             self.logger.debug(f'发送心跳包，编号：{self.__next_number}')
             try:
-                await self.__ws.send(self.__pack(self.DATAPACK_CLIENT_HEARTBEAT, self.__next_number, b'[object Object]'))
+                await self.__ws.send(
+                    self.__pack(self.DATAPACK_CLIENT_HEARTBEAT, self.__next_number, b'[object Object]'))
             except:
                 break
             self.__next_number += 1
@@ -1265,16 +1272,14 @@ class VideoOnlineMonitor:
         real_data = []
         while offset < len(data):
             region_header = struct.unpack('>IIII', data[:16])
-            region_data = data[offset:offset+region_header[0]]
+            region_data = data[offset:offset + region_header[0]]
             real_data.append({
                 'type': region_header[2],
                 'number': region_header[3],
-                'data': json.loads(region_data[offset+18:offset+18+(region_header[0]-16)])
+                'data': json.loads(region_data[offset + 18:offset + 18 + (region_header[0] - 16)])
             })
             offset += region_header[0]
         return real_data
-
-
 
 
 r"""

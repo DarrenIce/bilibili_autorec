@@ -10,6 +10,7 @@ from utils.display import Display
 from utils.load_conf import Config
 from utils.decoder import Decoder
 from utils.bilibili_api import live
+from win10toast import ToastNotifier
 
 console = Console()
 headers = {
@@ -43,6 +44,8 @@ TODO:
 √   live_info加一个key,cookies     
 √   转码队列可以去掉uname和filename相同的过早项        
 可以设置录制的起始和结束时间，为了避免录到录播的办法
+√   修改上传逻辑，维护一个上传队列，每一个加进去会有3600的EXPIRE，退到0时退出队列开始上传，如果EXPIRE期间有同名加入，则重新开始
+当前都是以uname作为重复判断条件，如果有问题再说
 '''
 
 
@@ -61,23 +64,55 @@ class Live():
         self.get_live_url()
         logger.info('初始化完成')
 
+    def create_duration(self, start_time, end_time):
+        t = datetime.datetime.now()
+        tt = datetime.datetime.now().strftime('%Y%m%d %H%M%S')
+        tmp = datetime.datetime.strptime(tt.split(' ')[0] + ' 000000', '%Y%m%d %H%M%S')
+        if tmp < t:
+            base_time1 = tt.split(' ')[0]
+            base_time2 = (t + datetime.timedelta(days=1)).strftime('%Y%m%d %H%M%S').split(' ')[0]
+        else:
+            base_time1 = (t - datetime.timedelta(days=1)).strftime('%Y%m%d %H%M%S').split(' ')[0]
+            base_time2 = tt.split(' ')[0]
+        if start_time > end_time:
+            start_time = '%s %s' % (base_time1, start_time)
+            end_time = '%s %s' % (base_time2, end_time)
+        else:
+            start_time = '%s %s' % (base_time1, start_time)
+            end_time = '%s %s' % (base_time1, end_time)
+        return '%s-%s' % (start_time, end_time)
+
+    def check_live(self, key):
+        duration = self.live_infos[key]['duration']
+        lst = duration.split('-')
+        now_time = datetime.datetime.now()
+        if len(lst) == 2:
+            start_time = datetime.datetime.strptime(lst[0], '%Y%m%d %H%M%S')
+            end_time = datetime.datetime.strptime(lst[1], '%Y%m%d %H%M%S')
+            if now_time > start_time and now_time < end_time:
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def load_room_info(self):
         for lst in self.config.config['live']['room_info']:
-            if str(lst[0]) not in self.live_infos:
-                self.live_infos[str(lst[0])] = {}
-                self.live_infos[str(lst[0])]['record_start_time'] = ''
-            self.live_infos[str(lst[0])]['need_rec'] = str(lst[1])
-            self.live_infos[str(lst[0])]['need_mask'] = str(lst[2])
-            self.live_infos[str(lst[0])]['maxsecond'] = str(lst[3])
-            self.live_infos[str(lst[0])]['upload'] = str(lst[4])
-            self.live_infos[str(lst[0])]['cookies'] = self.cookies
-            self.live_infos[str(lst[0])]['base_path'] = self.base_path
+            if lst[0] not in self.live_infos:
+                self.live_infos[lst[0]] = {}
+                self.live_infos[lst[0]]['record_start_time'] = ''
+            self.live_infos[lst[0]]['need_rec'] = lst[1]
+            self.live_infos[lst[0]]['need_mask'] = lst[2]
+            self.live_infos[lst[0]]['maxsecond'] = lst[3]
+            self.live_infos[lst[0]]['upload'] = lst[4]
+            self.live_infos[str(lst[0])]['duration'] = self.create_duration(lst[5], lst[6])
+            self.live_infos[lst[0]]['cookies'] = self.cookies
+            self.live_infos[lst[0]]['base_path'] = self.base_path
 
     def load_realtime(self):
         self.config.load_cfg()
         logger.debug(self.config.config)
-        room_lst = [str(i[0]) for i in self.config.config['live']['room_info']]
+        room_lst = [i[0] for i in self.config.config['live']['room_info']]
         tmp_dct = {}
         for key in self.live_infos:
             if key in room_lst:
@@ -89,7 +124,7 @@ class Live():
         '''
         获取所有监听直播间的信息
         '''
-        room_lst = [str(i[0]) for i in self.config.config['live']['room_info']]
+        room_lst = [i[0] for i in self.config.config['live']['room_info']]
         for id in room_lst:
             info = None
             while info is None:
@@ -104,17 +139,22 @@ class Live():
             try:
                 if self.live_infos[id]['live_status'] != 1 and info['room_info']['live_status'] == 1:
                     logger.info('%s[RoomID:%s]开播了' % (self.live_infos[id]['uname'], id))
+                    toaster = ToastNotifier()
+                    toaster.show_toast("开播通知",
+                                       '%s[RoomID:%s]开播了' % (self.live_infos[id]['uname'], id),
+                                       icon_path=None,
+                                       duration=3)
             except:
                 pass
             self.live_infos[id]['live_status'] = info['room_info']['live_status']
             self.live_infos[id]['uid'] = info['room_info']['uid']
             self.live_infos[id]['uname'] = info['anchor_info']['base_info']['uname']
             self.live_infos[id]['save_name'] = '%s_%s.flv' % (
-            self.live_infos[id]['uname'], time.strftime("%Y%m%d%H%M%S", time.localtime()))
+                self.live_infos[id]['uname'], time.strftime("%Y%m%d%H%M%S", time.localtime()))
             self.live_infos[id]['title'] = info['room_info']['title']
             self.live_infos[id]['live_start_time'] = info['room_info']['live_start_time']
             if 'recording' not in self.live_infos[id]:
-                self.live_infos[id]['recording'] = False
+                self.live_infos[id]['recording'] = 0
             logger.debug(
                 '%s[RoomID:%s]直播状态\t%s' % (self.live_infos[id]['uname'], id, self.live_infos[id]['live_status']))
             self.display.refresh_info(self.live_infos)
@@ -156,9 +196,9 @@ class Live():
             logger.info('%s[RoomID:%s]未获取到直播流' % (self.live_infos[key]['uname'], key))
             return None
 
-    def unlive(self,key,unlived):
+    def unlive(self, key, unlived):
         logger.info('%s[RoomID:%s]似乎下播了' % (self.live_infos[key]['uname'], key))
-        self.live_infos[key]['recording'] = False
+        self.live_infos[key]['recording'] = 0
         logger.info('%s[RoomID:%s]录制结束，录制了%.2f分钟' % (self.live_infos[key]['uname'], key, (
                 datetime.datetime.now() - datetime.datetime.strptime(
             self.live_infos[key]['record_start_time'],
@@ -171,10 +211,20 @@ class Live():
     def download_live(self, key):
         if key not in self.live_infos:
             return
+
+        if not self.check_live(key) and self.live_infos[key]['live_status'] == 1:
+            self.live_infos[key]['recording'] = 2
+            return
+
+        if self.check_live(key) and self.live_infos[key]['live_status'] == 1 and self.live_infos[key][
+            'need_rec'] == '0':
+            self.live_infos[key]['recording'] = 3
+            return
+
         if self.live_infos[key]['live_status'] == 1 and self.live_infos[key]['need_rec'] == '1':
             save_path = os.path.join(self.base_path, self.live_infos[key]['uname'], 'recording')
             logger.info('%s[RoomID:%s]准备下载直播流,保存在%s' % (self.live_infos[key]['uname'], key, save_path))
-            self.live_infos[key]['recording'] = True
+            self.live_infos[key]['recording'] = 1
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
 
@@ -182,13 +232,14 @@ class Live():
             if stream is None:
                 logger.error('%s[RoomID:%s]获取直播流失败' % (self.live_infos[key]['uname'], key))
                 self.live_infos[key]['record_start_time'] = ''
-                self.live_infos[key]['recording'] = False
+                self.live_infos[key]['recording'] = 0
                 return
             filename = os.path.join(save_path, self.live_infos[key]['save_name'])
             self.live_infos[key]['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             fd = stream.open()
             with open(filename, 'wb') as f:
-                while key in self.live_infos and self.live_infos[key]['live_status'] == 1 and self.live_infos[key]['need_rec'] == '1':
+                while key in self.live_infos and self.live_infos[key]['live_status'] == 1 and self.live_infos[key][
+                    'need_rec'] == '1' and self.check_live(key):
                     try:
                         data = fd.read(1024 * 8)
                         if len(data) == 8192:
@@ -199,7 +250,7 @@ class Live():
                             stream = self.get_stream(key)
                             if stream is None:
                                 logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos[key]['uname'], key))
-                                self.unlive(key,False)
+                                self.unlive(key, True)
                                 return
                             else:
                                 logger.info('%s[RoomID:%s]重连成功' % (self.live_infos[key]['uname'], key))
@@ -207,11 +258,11 @@ class Live():
                     except Exception as e:
                         fd.close()
                         logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos[key]['uname'], key))
-                        self.unlive(key,False)
+                        self.unlive(key, True)
                         logger.error(e)
                         raise e
             fd.close()
-            self.unlive(key,True)
+            self.unlive(key, True)
 
     def run(self):
         a = threading.Thread(target=self.display.run)

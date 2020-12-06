@@ -22,12 +22,14 @@ from utils.log import Log
 
 logger = Log()()
 
+
 class Bilibili:
     app_key = "bca7e84c2d947ac6"
 
     def __init__(self, https=True, queue=None):
         self._session = requests.Session()
-        self._session.headers.update({'User-Agent': "Mozilla/5.0 BiliDroid/6.4.0 (bbcallen@gmail.com) os/android model/M1903F11I mobi_app/android build/6040500 channel/bili innerVer/6040500 osVer/9.0.0 network/2"})
+        self._session.headers.update({
+            'User-Agent': "Mozilla/5.0 BiliDroid/6.4.0 (bbcallen@gmail.com) os/android model/M1903F11I mobi_app/android build/6040500 channel/bili innerVer/6040500 osVer/9.0.0 network/2"})
         self.__queue = queue
         self.get_cookies = lambda: self._session.cookies.get_dict(domain=".bilibili.com")
         self.get_csrf = lambda: self.get_cookies().get("bili_jct", "")
@@ -56,7 +58,8 @@ class Bilibili:
         if method in ["get", "post"]:
             for _ in range(retry + 1):
                 try:
-                    response = getattr(self._session, method)(url, timeout=timeout, proxies=self.proxy if enable_proxy else None, **kwargs)
+                    response = getattr(self._session, method)(url, timeout=timeout,
+                                                              proxies=self.proxy if enable_proxy else None, **kwargs)
                     return response.json() if decode_level == 2 else response.content if decode_level == 1 else response
                 except:
                     if enable_proxy:
@@ -118,11 +121,13 @@ class Bilibili:
                 response = self._requests("get", url)
                 if response and response.get("code") == 0:
                     self._session.cookies.set('DedeUserID', str(response['data']['mid']), domain=".bilibili.com")
-                    logger.info(f"Token仍有效, 有效期至{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() + int(response['data']['expires_in'])))}")
+                    logger.info(
+                        f"Token仍有效, 有效期至{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() + int(response['data']['expires_in'])))}")
                     param = f"access_key={self.access_token}&appkey={Bilibili.app_key}&gourl={self.protocol}%3A%2F%2Faccount.bilibili.com%2Faccount%2Fhome&ts={int(time.time())}"
                     url = f"{self.protocol}://passport.bilibili.com/api/login/sso?{param}&sign={self.calc_sign(param)}"
                     self._requests("get", url, decode_level=0)
-                    if all(key in self.get_cookies() for key in ["bili_jct", "DedeUserID", "DedeUserID__ckMd5", "sid", "SESSDATA"]):
+                    if all(key in self.get_cookies() for key in
+                           ["bili_jct", "DedeUserID", "DedeUserID__ckMd5", "sid", "SESSDATA"]):
                         logger.info("Cookie获取成功")
                         return True
                     else:
@@ -137,7 +142,8 @@ class Bilibili:
                     self._session.cookies.set(cookie['name'], cookie['value'], domain=".bilibili.com")
                 self.access_token = response['data']['token_info']['access_token']
                 self.refresh_token = response['data']['token_info']['refresh_token']
-                logger.info(f"Token刷新成功, 有效期至{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() + int(response['data']['token_info']['expires_in'])))}")
+                logger.info(
+                    f"Token刷新成功, 有效期至{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() + int(response['data']['token_info']['expires_in'])))}")
                 return True
             else:
                 self.access_token = ""
@@ -224,7 +230,9 @@ class Bilibili:
         self.username = kwargs.get("username", "")
         self.password = kwargs.get("password", "")
         force_refresh_token = kwargs.get("force_refresh_token", False)
-        if (not force_refresh_token or not self.access_token or not self.refresh_token) and all(key in self.get_cookies() for key in ["bili_jct", "DedeUserID", "DedeUserID__ckMd5", "sid", "SESSDATA"]) and by_cookie():
+        if (not force_refresh_token or not self.access_token or not self.refresh_token) and all(
+                key in self.get_cookies() for key in
+                ["bili_jct", "DedeUserID", "DedeUserID__ckMd5", "sid", "SESSDATA"]) and by_cookie():
             return True
         elif self.access_token and self.refresh_token and by_token(force_refresh_token):
             return True
@@ -233,6 +241,7 @@ class Bilibili:
         else:
             self._session.cookies.clear()
             return False
+
 
 def detect_charset(file, fallback="utf-8"):
     with open(file, "rb") as f:
@@ -243,8 +252,9 @@ def detect_charset(file, fallback="utf-8"):
                 return detector.result['encoding']
     return fallback
 
+
 def login():
-    config_file = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'conf','tool.toml')
+    config_file = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'conf', 'tool.toml')
     try:
         with open(config_file, "r", encoding=detect_charset(config_file)) as f:
             config = toml.load(f)
@@ -263,5 +273,5 @@ def login():
         except:
             pass
     bili = Bilibili(config['global']['https'])
-    bili.login(force_refresh_token=config['user']['force_refresh_token'],**account)
+    bili.login(force_refresh_token=config['user']['force_refresh_token'], **account)
     return bili.get_cookies()
