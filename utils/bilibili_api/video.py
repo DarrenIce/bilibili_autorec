@@ -867,7 +867,7 @@ def share_to_dynamic(content: str, bvid: str = None, aid: int = None, verify: ut
 
 # 视频上传三步
 
-def video_upload(path: str, verify: utils.Verify, cookies, on_progress=None):
+def video_upload(path: str, cookies, on_progress=None):
     """
     上传视频
     :param on_progress: 进度回调，数据格式：{"event": "事件名", "ok": "是否成功", "data": "附加数据"}
@@ -1037,7 +1037,7 @@ def video_cover_upload(path, verify: utils.Verify):
     return cover_url
 
 
-def video_submit(data: dict, verify: utils.Verify, cookies):
+def video_submit(data: dict, cookies):
     """
     提交投稿信息
     :param data: 投稿信息
