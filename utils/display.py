@@ -108,7 +108,7 @@ class Display():
         return table
 
     def run(self):
-        self.console.clear()
+        # self.console.clear()
         with Live(console=self.console, auto_refresh=False) as live:
             while True:
                 live.update(self.create_info_table(self.live_infos), refresh=True)
