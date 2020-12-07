@@ -81,11 +81,11 @@ class Upload():
                 with self._lock:
                     for i in range(len(self.upload_queue)):
                         self.upload_queue[i]['expire'] -= 1
-                    live_info = self.dequeue()
-                    if live_info is not None:
-                        t = threading.Thread(target=self.upload, args=[live_info, ],daemon=True)
-                        t.start()
-                    time.sleep(1)
+                live_info = self.dequeue()
+                if live_info is not None:
+                    t = threading.Thread(target=self.upload, args=[live_info, ],daemon=True)
+                    t.start()
+                time.sleep(1)
 
     def remove(self,live_infos):
         with self._lock:

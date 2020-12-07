@@ -44,11 +44,11 @@ TODO:
 √   live_info加一个key,base_path = self.base_path，可以一直更新       
 √   live_info加一个key,cookies     
 √   转码队列可以去掉uname和filename相同的过早项        
-可以设置录制的起始和结束时间，为了避免录到录播的办法
+√   可以设置录制的起始和结束时间，为了避免录到录播的办法
 √   修改上传逻辑，维护一个上传队列，每一个加进去会有3600的EXPIRE，退到0时退出队列开始上传，如果EXPIRE期间有同名加入，则重新开始
 当前都是以uname作为重复判断条件，如果有问题再说
-卡死问题需要解决
-输出频闪问题
+√   卡死问题需要解决，昨晚应该是死锁导致，目前已解决
+输出频闪问题    --  是因为渲染进程在单独的daemon线程原因，目前无解决方案
 '''
 
 
@@ -162,6 +162,7 @@ class Live():
             logger.debug(
                 '%s[RoomID:%s]直播状态\t%s' % (self.live_infos[id]['uname'], id, self.live_infos[id]['live_status']))
             self.display.refresh_info(self.live_infos)
+            logger.info(self.live_infos)
 
     def get_stream(self, key):
         '''
@@ -279,7 +280,6 @@ class Live():
                     except Exception as e:
                         fd.close()
                         logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos[key]['uname'], key))
-                        self.unlive(key, True)
                         logger.error(e)
                         raise e
             fd.close()
@@ -293,7 +293,7 @@ class Live():
         u = threading.Thread(target=self.upload.run,daemon=True)
         u.start()
         while True:
-            logger.info(threading.enumerate())
+            # logger.info(threading.enumerate())
             self.load_realtime()
             self.get_live_url()
             self.upload.remove(self.live_infos)

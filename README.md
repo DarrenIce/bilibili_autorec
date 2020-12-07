@@ -14,8 +14,9 @@
 
 1. 下载[ffmpeg](https://www.gyan.dev/ffmpeg/builds/)，下载ffmpeg-release-full版本，解压后重命名为ffmpeg，放在utils路径下
 2. pip install streamlink
-3. 根据提示修改demo配置文件，并且把_demo删去，修改配置文件名为tool.toml
-4. python main.py
+3. pip install keyboard
+4. 根据提示修改demo配置文件，并且把_demo删去，修改配置文件名为tool.toml
+5. python main.py
 
 ## 用到的开源项目
 
@@ -24,3 +25,4 @@
 * [FFmpeg](https://github.com/FFmpeg/FFmpeg)
 * [Bilibili-Toolkit](https://github.com/Hsury/Bilibili-Toolkit)
 * [streamlink](https://github.com/streamlink/streamlink)
+* [keyboard](https://github.com/boppreh/keyboard)

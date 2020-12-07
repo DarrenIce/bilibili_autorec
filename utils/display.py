@@ -14,12 +14,10 @@ class Info:
     room_id: str
     anchor: str
     title: str
-    live_status: Literal['[greed]直播中', '[yellow]录播中', '[red]未开播', '[blue]轮播中']
-    record_status: Literal['[green]录制中', '[red]未录制']
+    live_status: str
+    record_status: str
     start_time: str
     record_start_time: str
-
-    # live_url: str
 
     @property
     def live_status_map(self) -> str:
@@ -77,17 +75,18 @@ class Display():
     def create_info_table(self, live_infos):
         dct = {0: 0, 1: 100, 2: 50}
         dct2 = {0: 0, 1: 100, 2: 50, 3: 30}
-        infos = None
-        while infos is None:
-            try:
-                infos = sorted(
-                    [self.generate_info(rid, live_infos[key]) for key, rid in
-                     zip(live_infos.keys(), range(len(live_infos)))],
-                    key=lambda i: dct[i.live_status] + 30 * dct2[i.record_status] - i.row_id,
-                    reverse=True
-                )
-            except:
-                continue
+        # infos = None
+        # while infos is None:
+        #     try:
+        infos = sorted(
+            [self.generate_info(rid, live_infos[key]) for key, rid in
+                zip(live_infos.keys(), range(len(live_infos)))],
+            key=lambda i: dct[i.live_status] + 30 * dct2[i.record_status] - i.row_id,
+            reverse=True
+        )
+                # infos = [self.generate_info(rid, live_infos[key]) for key, rid in zip(live_infos.keys(), range(len(live_infos)))]
+            # except:
+            #     continue
         table = Table(
             "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长",
             title="%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
