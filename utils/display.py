@@ -3,6 +3,7 @@ import datetime
 from utils.rich.live import Live
 from utils.rich.table import Table
 from utils.rich.console import Console
+from utils.rich import box
 from typing_extensions import Literal
 from dataclasses import dataclass
 
@@ -89,7 +90,8 @@ class Display():
                 continue
         table = Table(
             "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长",
-            title="%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            title="%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            box=box.SIMPLE
         )
 
         for info in infos:
@@ -108,7 +110,7 @@ class Display():
 
     def run(self):
         self.console.clear()
-        with Live(console=self.console, auto_refresh=False,refresh_per_second=1) as live:
+        with Live(console=self.console, auto_refresh=False) as live:
             while True:
                 live.update(self.create_info_table(self.live_infos), refresh=True)
                 time.sleep(1)

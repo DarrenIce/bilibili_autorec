@@ -47,6 +47,8 @@ TODO:
 可以设置录制的起始和结束时间，为了避免录到录播的办法
 √   修改上传逻辑，维护一个上传队列，每一个加进去会有3600的EXPIRE，退到0时退出队列开始上传，如果EXPIRE期间有同名加入，则重新开始
 当前都是以uname作为重复判断条件，如果有问题再说
+卡死问题需要解决
+输出频闪问题
 '''
 
 
@@ -211,12 +213,16 @@ class Live():
             logger.info('%s[RoomID:%s]确认下播，加入转码上传队列' % (self.live_infos[key]['uname'], key))
             self.decoder.enqueue(self.live_infos[key])
             if self.live_infos[key]['upload'] == '1':
-                self.live_infos[key]['filename'] = self.live_infos[key]['uname']+self.live_infos[key]['duration'].split('-')[0].split(' ')[0]
-                self.live_infos[key]['filepath'] = os.path.join(self.base_path,self.live_infos[key]['uname'],'%s_%s' % (self.live_infos[key]['uname'],self.live_infos[key]['duration'].split('-')[0].split(' ')[0]))
+                self.live_infos[key]['filename'] = self.live_infos[key]['uname'] + \
+                                                   self.live_infos[key]['duration'].split('-')[0].split(' ')[0]
+                self.live_infos[key]['filepath'] = os.path.join(self.base_path, self.live_infos[key]['uname'],
+                                                                '%s_%s' % (self.live_infos[key]['uname'],
+                                                                           self.live_infos[key]['duration'].split('-')[
+                                                                               0].split(' ')[0]))
                 if self.live_infos[key]['need_mask'] == '1':
-                    self.live_infos[key]['filepath']+='_mask.mp4'
+                    self.live_infos[key]['filepath'] += '_mask.mp4'
                 else:
-                    self.live_infos[key]['filepath'] +='.mp4'
+                    self.live_infos[key]['filepath'] += '.mp4'
                 self.upload.enqueue(self.live_infos[key])
 
     def download_live(self, key):
@@ -257,7 +263,7 @@ class Live():
                     'need_rec'] == '1' and self.check_live(key):
                     try:
                         data = fd.read(1024 * 8)
-                        if len(data) == 8192:
+                        if len(data) > 0:
                             f.write(data)
                         else:
                             fd.close()
@@ -280,23 +286,20 @@ class Live():
             self.unlive(key, True)
 
     def run(self):
-        a = threading.Thread(target=self.display.run)
-        a.setDaemon(True)
+        a = threading.Thread(target=self.display.run,daemon=True)
         a.start()
-        d = threading.Thread(target=self.decoder.run)
-        d.setDaemon(True)
+        d = threading.Thread(target=self.decoder.run,daemon=True)
         d.start()
-        u = threading.Thread(target=self.upload.run)
-        u.setDaemon(True)
+        u = threading.Thread(target=self.upload.run,daemon=True)
         u.start()
         while True:
+            logger.info(threading.enumerate())
             self.load_realtime()
             self.get_live_url()
             self.upload.remove(self.live_infos)
             for key in self.live_infos:
                 if self.live_infos[key]['recording'] != 1:
-                    t = threading.Thread(target=self.download_live, args=[key, ])
-                    t.setDaemon(True)
+                    t = threading.Thread(target=self.download_live, args=[key, ],daemon=True)
                     t.start()
                 time.sleep(0.2)
             time.sleep(1)

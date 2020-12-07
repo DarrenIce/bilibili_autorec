@@ -4,7 +4,6 @@ log/log.log
 录播info.txt
 rec/*
 log/stream.log
-conf/main.cfg
 conf/tool.toml
 test.py
 直播info.txt

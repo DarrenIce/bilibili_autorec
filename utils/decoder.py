@@ -128,6 +128,8 @@ class Decoder():
             logger.info('当前转码队列情况: %s' % (' '.join(unames)))
 
     def dequeue(self):
+        if self._lock2.locked():
+            return None
         with self._lock:
             with self._lock2:
                 if len(self.decode_queue) > 0:
@@ -144,6 +146,6 @@ class Decoder():
         while True:
             if len(self.decode_queue) > 0:
                 live_info = self.dequeue()
-                t = threading.Thread(target=self.decodeAndupload, args=[live_info, ])
-                t.setDaemon(True)
-                t.start()
+                if live_info is not None:
+                    t = threading.Thread(target=self.decodeAndupload, args=[live_info, ],daemon=True)
+                    t.start()

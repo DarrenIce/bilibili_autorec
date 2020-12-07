@@ -61,6 +61,8 @@ class Upload():
             logger.info('当前上传队列情况: %s' % (' '.join(unames)))
 
     def dequeue(self):
+        if self._lock2.locked():
+            return None
         with self._lock:
             with self._lock2:
                 if len(self.upload_queue) > 0 and self.upload_queue[0]['expire'] <= 0:
@@ -81,8 +83,7 @@ class Upload():
                         self.upload_queue[i]['expire'] -= 1
                     live_info = self.dequeue()
                     if live_info is not None:
-                        t = threading.Thread(target=self.upload, args=[live_info, ])
-                        t.setDaemon(True)
+                        t = threading.Thread(target=self.upload, args=[live_info, ],daemon=True)
                         t.start()
                     time.sleep(1)
 
