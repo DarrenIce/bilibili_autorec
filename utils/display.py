@@ -6,6 +6,7 @@ from utils.rich.console import Console
 from utils.rich import box
 from typing_extensions import Literal
 from dataclasses import dataclass
+import threading
 
 
 @dataclass
@@ -52,6 +53,7 @@ class Display():
     def __init__(self):
         self.console = Console(force_terminal=True, color_system='truecolor')
         self.console._environ['TERM'] = 'SMART'
+        self._lock = threading.Lock()
 
     def generate_info(self, row_id: int, live_info: dict) -> Info:
         info = None
@@ -111,8 +113,10 @@ class Display():
         # self.console.clear()
         with Live(console=self.console, auto_refresh=False) as live:
             while True:
-                live.update(self.create_info_table(self.live_infos), refresh=True)
+                with self._lock:
+                    live.update(self.create_info_table(self.live_infos), refresh=True)
                 time.sleep(1)
 
     def refresh_info(self, live_infos):
-        self.live_infos = live_infos
+        with self._lock:
+            self.live_infos = live_infos

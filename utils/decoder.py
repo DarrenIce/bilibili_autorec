@@ -4,6 +4,7 @@ import threading
 import os
 import re
 import datetime
+import time
 
 logger = Log()()
 
@@ -144,6 +145,7 @@ class Decoder():
 
     def run(self):
         while True:
+            time.sleep(1)
             if len(self.decode_queue) > 0:
                 live_info = self.dequeue()
                 if live_info is not None:

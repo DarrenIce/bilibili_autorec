@@ -48,7 +48,7 @@ TODO:
 √   修改上传逻辑，维护一个上传队列，每一个加进去会有3600的EXPIRE，退到0时退出队列开始上传，如果EXPIRE期间有同名加入，则重新开始
 当前都是以uname作为重复判断条件，如果有问题再说
 √   卡死问题需要解决，昨晚应该是死锁导致，目前已解决
-输出频闪问题    --  是因为渲染进程在单独的daemon线程原因，目前无解决方案
+√   输出频闪问题，是因为decoder线程的while循环没有sleep，一直在占用CPU，影响了rich的输出。
 '''
 
 
@@ -162,7 +162,7 @@ class Live():
             logger.debug(
                 '%s[RoomID:%s]直播状态\t%s' % (self.live_infos[id]['uname'], id, self.live_infos[id]['live_status']))
             self.display.refresh_info(self.live_infos)
-            logger.info(self.live_infos)
+            logger.debug(self.live_infos)
 
     def get_stream(self, key):
         '''
@@ -293,6 +293,7 @@ class Live():
         u = threading.Thread(target=self.upload.run,daemon=True)
         u.start()
         while True:
+            time.sleep(1)
             # logger.info(threading.enumerate())
             self.load_realtime()
             self.get_live_url()
@@ -302,4 +303,3 @@ class Live():
                     t = threading.Thread(target=self.download_live, args=[key, ],daemon=True)
                     t.start()
                 time.sleep(0.2)
-            time.sleep(1)

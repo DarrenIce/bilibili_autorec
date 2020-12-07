@@ -77,6 +77,7 @@ class Upload():
 
     def run(self):
         while True:
+            time.sleep(1)
             if len(self.upload_queue) > 0:
                 with self._lock:
                     for i in range(len(self.upload_queue)):
@@ -85,7 +86,6 @@ class Upload():
                 if live_info is not None:
                     t = threading.Thread(target=self.upload, args=[live_info, ],daemon=True)
                     t.start()
-                time.sleep(1)
 
     def remove(self,live_infos):
         with self._lock:
