@@ -875,9 +875,10 @@ def video_upload(path: str, cookies, on_progress=None):
     :param on_progress: 进度回调，数据格式：{"event": "事件名", "ok": "是否成功", "data": "附加数据"}
                         事件名：PRE_UPLOAD，GET_UPLOAD_ID，UPLOAD_CHUNK，VERIFY
     :param path: 视频路径
-    :param verify:
+    :param cookies:
     :return: 该视频的filename，用于后续提交投稿用
     """
+    
     if on_progress is not None and not callable(on_progress):
         raise exceptions.BilibiliApiException("on_progress 参数必须是个方法")
     session = requests.session()
@@ -1007,7 +1008,8 @@ def video_upload(path: str, cookies, on_progress=None):
                     if on_progress:
                         on_progress({"event": "VERIFY", "ok": False, "data": None})
                     raise exceptions.UploadException('视频上传失败')
-
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     r = asyncio.get_event_loop().run_until_complete(main())
     return r
 

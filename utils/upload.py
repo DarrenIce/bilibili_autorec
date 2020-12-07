@@ -15,8 +15,9 @@ class Upload():
     def upload(self, live_info):
         logger.info('%s[RoomID:%s]等待上传' % (live_info['uname'], live_info['room_id']))
         with self._lock2:
-            logger.info('%s[RoomID:%s]开始本次上传' % (live_info['uname'], live_info['room_id']))
+            logger.info('%s[RoomID:%s]开始本次上传，投稿名称: %s, 本地位置: %s' % (live_info['uname'], live_info['room_id'],live_info['filename'],live_info['filepath']))
             filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
+            logger.info('%s[RoomID:%s]%s上传成功' % (live_info['uname'], live_info['room_id'],live_info['filename']))
             data = {
                 "copyright": 2,
                 "source": "https://live.bilibili.com/%s" % live_info['room_id'],
@@ -36,7 +37,7 @@ class Upload():
                 "videos": [
                     {
                         "desc": "",
-                        "filename": live_info['filename'],
+                        "filename": filename,
                         "title": "P1"
                     }
                 ]
