@@ -49,7 +49,7 @@ TODO:
 当前都是以uname作为重复判断条件，如果有问题再说
 √   卡死问题需要解决，昨晚应该是死锁导致，目前已解决
 √   输出频闪问题，是因为decoder线程的while循环没有sleep，一直在占用CPU，影响了rich的输出。
-设置log level、expire等参数为配置文件，部分可以作为动态调整参数。记得提醒user根据自己电脑配置设置expire,或者每次上传前先os检测一下，没有就阻塞，但是有可能死锁
+√   设置log level、expire等参数为配置文件，部分可以作为动态调整参数。记得提醒user根据自己电脑配置设置expire,或者每次上传前先os检测一下，没有就放回队列
 '''
 
 
@@ -71,9 +71,9 @@ class Live():
 
     def create_duration(self, start_time, end_time):
         t = datetime.datetime.now()
-        tt = datetime.datetime.now().strftime('%Y%m%d %H%M%S')
-        tmp = datetime.datetime.strptime(tt.split(' ')[0] + ' 000000', '%Y%m%d %H%M%S')
-        if tmp < t:
+        tt = t.strftime('%Y%m%d %H%M%S')
+        tmp = datetime.datetime.strptime(tt.split(' ')[0] + ' %s' % start_time, '%Y%m%d %H%M%S')
+        if t > tmp:
             base_time1 = tt.split(' ')[0]
             base_time2 = (t + datetime.timedelta(days=1)).strftime('%Y%m%d %H%M%S').split(' ')[0]
         else:
@@ -83,8 +83,8 @@ class Live():
             start_time = '%s %s' % (base_time1, start_time)
             end_time = '%s %s' % (base_time2, end_time)
         else:
-            start_time = '%s %s' % (base_time1, start_time)
-            end_time = '%s %s' % (base_time1, end_time)
+            start_time = '%s %s' % (tt.split(' ')[0], start_time)
+            end_time = '%s %s' % (tt.split(' ')[0], end_time)
         return '%s-%s' % (start_time, end_time)
 
     def check_live(self, key):
@@ -97,6 +97,7 @@ class Live():
             if now_time > start_time and now_time < end_time:
                 return True
             else:
+                logger.info('%s[RoomID:%s]不在直播时间段' % (self.live_infos[key]['uname'], key))
                 return False
         else:
             return False
@@ -179,7 +180,7 @@ class Live():
         session.set_option("http-headers", headers)
         log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'stream.log')
         session.set_loglevel("debug")
-        session.set_logoutput(open(log_path, 'a+'))
+        session.set_logoutput(open(log_path, 'a',encoding='utf-8'))
         streams = None
         while streams is None:
             try:
@@ -293,6 +294,10 @@ class Live():
         d.start()
         u = threading.Thread(target=self.upload.run,daemon=True)
         u.start()
+        dhb = threading.Thread(target=self.decoder.heartbeat,daemon=True)
+        dhb.start()
+        uhb = threading.Thread(target=self.upload.heartbeat,daemon=True)
+        uhb.start()
         while True:
             time.sleep(1)
             # logger.info(threading.enumerate())

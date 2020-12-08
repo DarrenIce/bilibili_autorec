@@ -30,3 +30,11 @@ room_info = [
 # 请尽量关闭黑色遮挡，减小CPU压力
 [output]
 path = 'rec'
+
+[log]
+# 静态参数，可以设置为'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+level = 'INFO'
+
+[paras]
+# 请自己估算给一个4小时的视频添加黑色遮挡的转码时间，默认1小时
+expire = 3600

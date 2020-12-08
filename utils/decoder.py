@@ -1,10 +1,12 @@
 import subprocess
+from pymediainfo import MediaInfo
 from utils.log import Log
 import threading
 import os
 import re
 import datetime
 import time
+import json
 
 logger = Log()()
 
@@ -86,7 +88,13 @@ class Decoder():
             logger.info('%s has been removed.' % tsop)
 
         if live_info['need_mask'] == '1':
-            mask_path = os.path.join(live_info['base_path'], 'mask.jpg')
+            width = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][1]['width']
+            height = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][1]['height']
+            logger.info('%s[RoomID:%s]视频分辨率 %s × %s' % (live_info['uname'], live_info['room_id'],width,height))
+            if width == 1920:
+                mask_path = os.path.join(live_info['base_path'], 'mask2.jpg')
+            else:
+                mask_path = os.path.join(live_info['base_path'], 'mask1.jpg')
             output_file2 = output_file.replace('.mp4', '') + '_mask.mp4'
             command = [
                 ffmpeg_path,
@@ -106,7 +114,7 @@ class Decoder():
         return output_file, filename
 
     def decodeAndupload(self, live_info):
-        logger.info('%s 等待转码上传' % (live_info['uname']))
+        logger.info('%s 等待转码' % (live_info['uname']))
         with self._lock2:
             logger.info('%s 开始转码' % (live_info['uname']))
             # 这两个参数存到live_info里
@@ -151,3 +159,11 @@ class Decoder():
                 if live_info is not None:
                     t = threading.Thread(target=self.decodeAndupload, args=[live_info, ],daemon=True)
                     t.start()
+
+    def heartbeat(self):
+        while True:
+            time.sleep(60)
+            unames = [i['uname'] for i in self.decode_queue]
+            logger.info('当前转码队列情况: %s' % (' '.join(unames)))
+            if unames == []:
+                time.sleep(300)
