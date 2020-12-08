@@ -26,7 +26,8 @@ def job():
                             a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
                             print(a)
 
-scheduler = BlockingScheduler()
-scheduler.add_job(job,'cron',day_of_week='0-6',hour=7,minute=00)
-scheduler.start()
+# scheduler = BlockingScheduler()
+# scheduler.add_job(job,'cron',day_of_week='0-6',hour=7,minute=00)
+# scheduler.start()
+job()
 # a = a = subprocess.run([PCSpath,"share","set",'录播'])
