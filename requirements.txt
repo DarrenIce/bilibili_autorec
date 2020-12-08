@@ -1,4 +1,5 @@
-streamlink==1.7.0
-win10toast==0.9
-keyboard==0.13.5
-pymediainfo==5.0.3
+streamlink
+win10toast
+keyboard
+pymediainfo
+apscheduler
