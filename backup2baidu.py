@@ -22,3 +22,4 @@ for key in live.live_infos:
                         a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
                         print(a)
 
+a = a = subprocess.run([PCSpath,"share","set",'录播'])
