@@ -11,3 +11,4 @@ utils/轮播info.txt
 .idea/
 .vscode/
 log/ffmpeg.log
+conf/main.cfg
