@@ -27,7 +27,7 @@ class Log():
                         os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'log.log'),
                         mode='a', encoding='utf-8')
                     formatter = logging.Formatter(
-                        '[%(levelname)s] %(asctime)s %(filename)s:%(lineno)d\tpid:%(thread)d\t%(message)s')
+                        '[%(levelname)s]\t%(asctime)s\t%(filename)s:%(lineno)d\tpid:%(thread)d\t%(message)s')
                     fh.setFormatter(formatter)
                     self.logger.addHandler(fh)
 

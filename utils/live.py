@@ -72,6 +72,8 @@ class Live():
     def create_duration(self, start_time, end_time):
         t = datetime.datetime.now()
         tt = t.strftime('%Y%m%d %H%M%S')
+        if start_time == end_time == '0':
+            return '0'
         tmp = datetime.datetime.strptime(tt.split(' ')[0] + ' %s' % start_time, '%Y%m%d %H%M%S')
         if t > tmp:
             base_time1 = tt.split(' ')[0]
@@ -89,6 +91,8 @@ class Live():
 
     def check_live(self, key):
         duration = self.live_infos[key]['duration']
+        if duration == '0':
+            return True
         lst = duration.split('-')
         now_time = datetime.datetime.now()
         if len(lst) == 2:
