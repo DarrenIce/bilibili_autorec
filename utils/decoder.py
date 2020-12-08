@@ -133,8 +133,6 @@ class Decoder():
                 del self.decode_queue[unames[live_info['uname']]]
                 self.decode_queue.append(live_info)
                 logger.info('%s 在转码等待队列中的状态更新了' % live_info['uname'])
-            unames = [i['uname'] for i in self.decode_queue]
-            logger.info('当前转码队列情况: %s' % (' '.join(unames)))
 
     def dequeue(self):
         if self._lock2.locked():
@@ -145,8 +143,6 @@ class Decoder():
                     live_info = self.decode_queue[0]
                     del self.decode_queue[0]
                     logger.info('%s 退出转码等待队列' % live_info['uname'])
-                    unames = [i['uname'] for i in self.decode_queue]
-                    logger.info('当前转码队列情况: %s' % (' '.join(unames)))
                     return live_info
                 else:
                     return None
