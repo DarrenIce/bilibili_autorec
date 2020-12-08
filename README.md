@@ -26,3 +26,4 @@
 * [streamlink](https://github.com/streamlink/streamlink)
 * [keyboard](https://github.com/boppreh/keyboard)
 * [Windows-10-Toast-Notifications](https://github.com/jithurjacob/Windows-10-Toast-Notifications)
+* [BaiduPCS-Go](https://github.com/qjfoidnh/BaiduPCS-Go)
