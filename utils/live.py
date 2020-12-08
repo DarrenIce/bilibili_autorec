@@ -116,6 +116,9 @@ class Live():
             self.live_infos[lst[0]]['base_path'] = self.base_path
 
     def load_realtime(self):
+        '''
+        实时加载配置，更新房间信息
+        '''
         self.config.load_cfg()
         logger.debug(self.config.config)
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
@@ -169,8 +172,8 @@ class Live():
     def get_stream(self, key):
         '''
         获取直播流
-        :param key:
-        :return:
+        :param key: 房间显示id
+        :return: stream
         '''
         if key not in self.live_infos:
             return None
