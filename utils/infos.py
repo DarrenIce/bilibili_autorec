@@ -9,22 +9,53 @@ class Infos():
         self.live_infos = {}
         self._lock = threading.Lock()
 
-    def __setitem__(self, key, value):
+    def update(self, key, value):
         with self._lock:
-            self.live_infos[key] = value
+            if key not in self.live_infos:
+                self.live_infos[key] = {}
+            for k in value:
+                self.live_infos[key][k] = value[k]
 
-    def __delitem__(self,key):
+    def delete(self,key):
         with self._lock:
             del self.live_infos[key]
 
-    def __getitem__(self,key):
+    def get(self,key):
         with self._lock:
             return self.live_infos[key]
 
     def copy(self):
-        with self._lock:
-            return copy.deepcopy(self.live_infos)
+        return copy.deepcopy(self.live_infos)
 
     def overload(self,live_infos):
         with self._lock:
             self.live_infos = live_infos
+
+
+'''
+'room_id': {
+    'record_start_time': '',
+    'need_rec': '1',
+    'need_mask': '0',
+    'maxsecond': '28800',
+    'need_upload': '0',
+    'duration': '0',
+    'cookies': {
+        'DedeUserID': '5259276',
+        'DedeUserID__ckMd5': 'e86975bfe5e11d36',
+        'SESSDATA': '276f5b3a%2C1610076024%2C0cb342c1',
+        'bili_jct': '3ddd284537f568ad39cc15b3b9ff28dd',
+        'sid': 'hx0tlrj8'
+    },
+    'base_path': 'C:\\Coding\\python\\bilibili_autorec\\rec',
+    'room_id': '12607506',
+    'real_id': 12607506,
+    'live_status': 1,
+    'uid': 353708919,
+    'uname': '夢冬oTo',
+    'save_name': '夢冬oTo_20201209112028.flv',
+    'title': '【3D】无人声~喜欢·',
+    'live_start_time': 1607436889,
+    'recording': 0
+}
+'''

@@ -1,6 +1,8 @@
 import subprocess
 from pymediainfo import MediaInfo
 from utils.log import Log
+from utils.load_conf import Config
+from utils.infos import Infos
 import threading
 import os
 import re
@@ -12,12 +14,14 @@ logger = Log()()
 
 
 class Queue():
-    def __init__(self, qname, func):
+    def __init__(self):
         self._lock = threading.Lock()
         self._lock2 = threading.Lock()
+        self.config = Config()
+        self.infos = Infos()
         self.queue = []
-        self.qname = qname
-        self.func = func
+        self.qname = ''
+        self.func = lambda x:x
 
     def func_call(self, key):
         with self._lock2:
