@@ -10,6 +10,7 @@ from utils.rich.console import Console
 from utils.display import Display
 from utils.load_conf import Config
 from utils.decoder import Decoder
+from utils.infos import Infos
 from utils.bilibili_api import live
 from win10toast import ToastNotifier
 
@@ -51,6 +52,7 @@ TODO:
 √   输出频闪问题，是因为decoder线程的while循环没有sleep，一直在占用CPU，影响了rich的输出。
 √   设置log level、expire等参数为配置文件，部分可以作为动态调整参数。记得提醒user根据自己电脑配置设置expire,或者每次上传前先os检测一下，没有就放回队列
 加一个CPU、内存、网络占用显示
+singleton queue 消息队列
 '''
 
 
@@ -61,10 +63,9 @@ class Live():
         logger.info(self.cookies)
         self.base_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
                                       self.config.config['output']['path'])
-        self.live_infos = {}
+        self.live_infos = Infos()
         self.display = Display()
         self.decoder = Decoder()
-        self.upload = Upload()
         logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
@@ -108,17 +109,20 @@ class Live():
             return False
 
     def load_room_info(self):
+        live_infos = self.live_infos.copy()
         for lst in self.config.config['live']['room_info']:
-            if lst[0] not in self.live_infos:
-                self.live_infos[lst[0]] = {}
-                self.live_infos[lst[0]]['record_start_time'] = ''
-            self.live_infos[lst[0]]['need_rec'] = lst[1]
-            self.live_infos[lst[0]]['need_mask'] = lst[2]
-            self.live_infos[lst[0]]['maxsecond'] = lst[3]
-            self.live_infos[lst[0]]['upload'] = lst[4]
-            self.live_infos[str(lst[0])]['duration'] = self.create_duration(lst[5], lst[6])
-            self.live_infos[lst[0]]['cookies'] = self.cookies
-            self.live_infos[lst[0]]['base_path'] = self.base_path
+            if lst[0] not in live_infos:
+                live_infos[lst[0]] = {}
+                live_infos[lst[0]]['record_start_time'] = ''
+            live_infos[lst[0]]['need_rec'] = lst[1]
+            live_infos[lst[0]]['need_mask'] = lst[2]
+            live_infos[lst[0]]['maxsecond'] = lst[3]
+            live_infos[lst[0]]['upload'] = lst[4]
+            live_infos[str(lst[0])]['duration'] = self.create_duration(lst[5], lst[6])
+            live_infos[lst[0]]['cookies'] = self.cookies
+            live_infos[lst[0]]['base_path'] = self.base_path
+        self.live_infos.overload(live_infos)
+        # print(self.live_infos.live_infos)
 
     def load_realtime(self):
         '''
@@ -127,11 +131,11 @@ class Live():
         self.config.load_cfg()
         logger.debug(self.config.config)
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
-        tmp_dct = {}
-        for key in self.live_infos:
-            if key in room_lst:
-                tmp_dct[key] = self.live_infos[key]
-        self.live_infos = tmp_dct
+        del_lst = []
+        for key in self.live_infos.copy():
+            if key not in room_lst:
+                del_lst.append(key)
+        del self.live_infos[key]
         self.load_room_info()
 
     def get_live_url(self):
@@ -171,7 +175,7 @@ class Live():
                 self.live_infos[id]['recording'] = 0
             logger.debug(
                 '%s[RoomID:%s]直播状态\t%s' % (self.live_infos[id]['uname'], id, self.live_infos[id]['live_status']))
-            self.display.refresh_info(self.live_infos)
+            # self.display.refresh_info(self.live_infos)
             logger.debug(self.live_infos)
 
     def get_stream(self, key):
@@ -234,7 +238,6 @@ class Live():
                     self.live_infos[key]['filepath'] += '_mask.mp4'
                 else:
                     self.live_infos[key]['filepath'] += '.mp4'
-                self.upload.enqueue(self.live_infos[key])
 
     def download_live(self, key):
         if key not in self.live_infos:
@@ -300,20 +303,16 @@ class Live():
         a.start()
         d = threading.Thread(target=self.decoder.run,daemon=True)
         d.start()
-        u = threading.Thread(target=self.upload.run,daemon=True)
-        u.start()
         dhb = threading.Thread(target=self.decoder.heartbeat,daemon=True)
         dhb.start()
-        uhb = threading.Thread(target=self.upload.heartbeat,daemon=True)
-        uhb.start()
         while True:
             time.sleep(1)
             # logger.info(threading.enumerate())
             self.load_realtime()
             self.get_live_url()
-            self.upload.remove(self.live_infos)
-            for key in self.live_infos:
-                if self.live_infos[key]['recording'] != 1:
+            live_infos = self.live_infos.copy()
+            for key in live_infos:
+                if live_infos[key]['recording'] != 1:
                     t = threading.Thread(target=self.download_live, args=[key, ],daemon=True)
                     t.start()
                 time.sleep(0.2)
