@@ -148,4 +148,4 @@ def bytes2human(n):
          if n >= prefix[s]:
              value = float(n) / prefix[s]
              return '%.1f%s' % (value,s)
-     return '%.2fB' % float(n)
+     return '%.1fB' % float(n)
