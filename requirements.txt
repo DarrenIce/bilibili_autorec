@@ -3,3 +3,4 @@ win10toast
 keyboard
 pymediainfo
 apscheduler
+psutil

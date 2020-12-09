@@ -4,11 +4,13 @@ from utils.rich.live import Live
 from utils.rich.table import Table
 from utils.rich.console import Console
 from utils.rich import box
+from rich.console import RenderGroup
 from utils.infos import Infos
 from utils.log import Log
 from typing_extensions import Literal
 from dataclasses import dataclass
 import threading
+import psutil
 
 logger = Log()()
 
@@ -56,6 +58,9 @@ class Display():
         self.console._environ['TERM'] = 'SMART'
         self._lock = threading.Lock()
         self.live_infos = Infos()
+        self.last_time = datetime.datetime.now()
+        self.last_net_sent = 0.0
+        self.last_net_recv = 0.0
 
     def generate_info(self, row_id: int, live_info: dict) -> Info:
         info = None
@@ -85,14 +90,14 @@ class Display():
             key=lambda i: dct[i.live_status] + 30 * dct2[i.record_status] - i.row_id,
             reverse=True
         )
-        table = Table(
+        table1 = Table(
             "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长",
             title="%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             box=box.SIMPLE
         )
 
         for info in infos:
-            table.add_row(
+            table1.add_row(
                 str(info.row_id),
                 info.room_id,
                 info.anchor,
@@ -102,7 +107,30 @@ class Display():
                 info.start_time,
                 info.record_time,
             )
-        return table
+
+        table2 = Table(
+            "CPU","Memory","NetSent","NetRecv",
+            box=box.SIMPLE
+        )
+
+        time_now = datetime.datetime.now()
+        now_recv = psutil.net_io_counters().bytes_recv
+        now_sent = psutil.net_io_counters().bytes_sent
+
+        table2.add_row(
+            str(psutil.cpu_percent(None))+'%',
+            str(psutil.virtual_memory().percent)+'%',
+            bytes2human((now_sent-self.last_net_sent)/(time_now - self.last_time).total_seconds()),
+            bytes2human((now_recv-self.last_net_recv)/(time_now - self.last_time).total_seconds())
+        )
+
+        self.last_time = time_now
+        self.last_net_sent = now_sent
+        self.last_net_recv = now_recv
+
+        return RenderGroup(
+            table1,table2
+        )
 
     def run(self):
         # self.console.clear()
@@ -110,3 +138,14 @@ class Display():
             while True:
                 live.update(self.create_info_table(self.live_infos.copy()), refresh=True)
                 time.sleep(1)
+
+def bytes2human(n):
+     symbols = ('K','M','G','T','P','E','Z','Y')
+     prefix = {}
+     for i,s in enumerate(symbols):
+         prefix[s] = 1 << (i + 1) * 10
+     for s in reversed(symbols):
+         if n >= prefix[s]:
+             value = float(n) / prefix[s]
+             return '%.1f%s' % (value,s)
+     return '%.2fB' % float(n)

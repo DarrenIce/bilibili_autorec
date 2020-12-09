@@ -51,8 +51,8 @@ TODO:
 √   卡死问题需要解决，昨晚应该是死锁导致，目前已解决
 √   输出频闪问题，是因为decoder线程的while循环没有sleep，一直在占用CPU，影响了rich的输出。
 √   设置log level、expire等参数为配置文件，部分可以作为动态调整参数。记得提醒user根据自己电脑配置设置expire,或者每次上传前先os检测一下，没有就放回队列
-加一个CPU、内存、网络占用显示
-singleton queue 消息队列
+√   加一个CPU、内存、网络占用显示
+√   singleton queue 消息队列
 '''
 
 
