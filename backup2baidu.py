@@ -33,15 +33,17 @@ def daily_job():
                             a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
                             print(a)
 
-def test():
-    logger.info(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+# def test():
+#     logger.info(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-def scheduler_run():
-    scheduler = BlockingScheduler()
-    scheduler.add_job(test,'cron',day_of_week='0-6',hour=17,minute=10)
-    scheduler.start()
+# def scheduler_run():
+#     scheduler = BlockingScheduler()
+#     scheduler.add_job(test,'cron',day_of_week='0-6',hour=17,minute=10)
+#     scheduler.start()
 
-threading.Thread(target=scheduler_run,daemon=True).start()
-while True:
-    time.sleep(1)
+# threading.Thread(target=scheduler_run,daemon=True).start()
+# while True:
+#     time.sleep(1)
 # a = a = subprocess.run([PCSpath,"share","set",'录播'])
+
+daily_job()

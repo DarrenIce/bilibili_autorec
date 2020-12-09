@@ -118,10 +118,10 @@ class Display():
         now_sent = psutil.net_io_counters().bytes_sent
 
         table2.add_row(
-            str(psutil.cpu_percent(None))+'%',
-            str(psutil.virtual_memory().percent)+'%',
-            bytes2human((now_sent-self.last_net_sent)/(time_now - self.last_time).total_seconds()),
-            bytes2human((now_recv-self.last_net_recv)/(time_now - self.last_time).total_seconds())
+            str(psutil.cpu_percent(None))+'%' + '  %.2fGHz' % (psutil.cpu_freq().current/1000.0),
+            str(psutil.virtual_memory().percent)+'%' + '  %s/%s' % (bytes2human(psutil.virtual_memory().used),bytes2human(psutil.virtual_memory().total)),
+            bytes2human((now_sent-self.last_net_sent)/(time_now - self.last_time).total_seconds())+'/s',
+            bytes2human((now_recv-self.last_net_recv)/(time_now - self.last_time).total_seconds())+'/s'
         )
 
         self.last_time = time_now

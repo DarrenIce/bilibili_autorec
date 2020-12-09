@@ -174,18 +174,22 @@ class Live():
                                        duration=3)
             except:
                 pass
-            live_info['live_status'] = info['room_info']['live_status']
-            live_info['uid'] = info['room_info']['uid']
-            live_info['uname'] = info['anchor_info']['base_info']['uname']
-            live_info['save_name'] = '%s_%s.flv' % (
-                live_info['uname'], time.strftime("%Y%m%d%H%M%S", time.localtime()))
-            live_info['title'] = info['room_info']['title']
-            live_info['live_start_time'] = info['room_info']['live_start_time']
-            if 'recording' not in live_info:
-                live_info['recording'] = 0
-            self.live_infos.update(id,live_info)
-            logger.debug(
-                '%s[RoomID:%s]直播状态\t%s' % (live_info['uname'], id, live_info['live_status']))
+            try:
+                live_info['live_status'] = info['room_info']['live_status']
+                live_info['uid'] = info['room_info']['uid']
+                live_info['uname'] = info['anchor_info']['base_info']['uname']
+                live_info['save_name'] = '%s_%s.flv' % (
+                    live_info['uname'], time.strftime("%Y%m%d%H%M%S", time.localtime()))
+                live_info['title'] = info['room_info']['title']
+                live_info['live_start_time'] = info['room_info']['live_start_time']
+                if 'recording' not in live_info:
+                    live_info['recording'] = 0
+                self.live_infos.update(id,live_info)
+                logger.debug(
+                    '%s[RoomID:%s]直播状态\t%s' % (live_info['uname'], id, live_info['live_status']))
+            except Exception as e:
+                logger.critical(e)
+                logger.error('[RoomID:%s]房间信息更新失败' % (id))
         # logger.info(self.live_infos.copy())
 
     def get_stream(self, key):
