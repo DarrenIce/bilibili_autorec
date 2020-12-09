@@ -20,7 +20,7 @@ class Upload(Queue):
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
         if key not in room_lst:
             return None
-        live_info = self.infos.copy()['key']
+        live_info = self.infos.copy()[key]
         if live_info['live_status'] == 1:
             logger.info('%s[RoomID:%s]直播中，暂不上传' % (live_info['uname'], live_info['room_id']))
             return None

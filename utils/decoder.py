@@ -30,7 +30,7 @@ class Decoder(Queue):
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
         if key not in room_lst:
             return None
-        live_info = self.infos.copy()['key']
+        live_info = self.infos.copy()[key]
         save_path = os.path.join(live_info['base_path'], live_info['uname'])
         time_lst = []
         flst = []
@@ -91,8 +91,11 @@ class Decoder(Queue):
         subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
 
         for tsop in output_lst:
-            os.remove(tsop)
-            logger.info('%s has been removed.' % tsop)
+            try:
+                os.remove(tsop)
+                logger.info('%s has been removed.' % tsop)
+            except:
+                logger.error('%s removed error.' % tsop)
 
         if live_info['need_mask'] == '1':
             width = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][1]['width']
@@ -116,4 +119,5 @@ class Decoder(Queue):
             subprocess.call(' '.join(command), stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
 
         logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))
-        self.uploader.enqueue(key)
+        if live_info['need_upload'] == '1':
+            self.uploader.enqueue(key)

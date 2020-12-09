@@ -21,11 +21,11 @@ class Queue():
         self.infos = Infos()
         self.queue = []
         self.qname = ''
-        self.func = lambda x:x
+        self.func = lambda x:time.sleep(400)
 
     def func_call(self, key):
         with self._lock2:
-            logger.info('%s 开始%s' % (key, self.qname))
+            logger.info('%s 开始%s' % (self.infos.copy()[key]['uname'], self.qname))
             self.func(key)
 
 
@@ -33,11 +33,11 @@ class Queue():
         with self._lock:
             if key not in self.queue:
                 self.queue.append(key)
-                logger.info('%s 进入%s等待队列' % (key,self.qname))
+                logger.info('%s 进入%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
             else:
                 self.queue.remove(key)
                 self.queue.append(key)
-                logger.info('%s 在%s等待队列中的状态更新了' % (key,self.qname))
+                logger.info('%s 在%s等待队列中的状态更新了' % (self.infos.copy()[key]['uname'],self.qname))
 
     def dequeue(self):
         if self._lock2.locked():
@@ -47,7 +47,7 @@ class Queue():
                 if len(self.queue) > 0:
                     key = self.queue[0]
                     del self.queue[0]
-                    logger.info('%s 退出%s等待队列' % (key,self.qname))
+                    logger.info('%s 退出%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
                     return key
                 else:
                     return None
@@ -62,7 +62,8 @@ class Queue():
 
     def heartbeat(self):
         while True:
-            time.sleep(60)
-            logger.info('当前%s队列情况: %s' % (self.qname, ' '.join(self.queue)))
+            logger.info('当前%s队列情况: %s' % (self.qname, ' '.join([self.infos.copy()[key]['uname'] for key in self.queue])))
             if self.queue == []:
                 time.sleep(300)
+            else:
+                time.sleep(60)
