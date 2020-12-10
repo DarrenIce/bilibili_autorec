@@ -190,6 +190,7 @@ class Live():
             except Exception as e:
                 logger.critical(e)
                 logger.error('[RoomID:%s]房间信息更新失败' % (id))
+                logger.error(info)
         # logger.info(self.live_infos.copy())
 
     def get_stream(self, key):
