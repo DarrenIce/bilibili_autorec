@@ -286,7 +286,13 @@ class Live():
                 return
             filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
             self.live_infos.get(key)['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            fd = stream.open()
+            try:
+                fd = stream.open()
+            except Exception as e:
+                self.unlive(key,unlived=False)
+                logger.critical('%s[RoomID:%s]fd open error' % (self.live_infos.get(key)['uname'], key))
+                logger.error(e)
+                return
             with open(filename, 'wb') as f:
                 while self.judge_in(key) and self.live_infos.get(key)['live_status'] == 1 and self.live_infos.get(key)[
                     'need_rec'] == '1' and self.check_live(key):
@@ -307,17 +313,16 @@ class Live():
                                 fd = stream.open()
                     except Exception as e:
                         fd.close()
+                        self.unlive(key,unlived=False)
                         logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos.get(key)['uname'], key))
                         logger.error(e)
-                        raise e
+                        return
             fd.close()
             self.unlive(key, True)
 
     def run(self):
         threading.Thread(target=self.display.run,daemon=True).start()
-        threading.Thread(target=self.decoder.run,daemon=True).start()
         threading.Thread(target=self.decoder.heartbeat,daemon=True).start()
-        threading.Thread(target=self.uploader.run,daemon=True).start()
         threading.Thread(target=self.uploader.heartbeat,daemon=True).start()
         while True:
             time.sleep(1)
@@ -328,3 +333,9 @@ class Live():
                 if live_infos[key]['recording'] != 1:
                     threading.Thread(target=self.download_live, args=[key, ],daemon=True).start()
                 time.sleep(0.2)
+            key = self.decoder.dequeue()
+            if key is not None:
+                threading.Thread(target=self.decoder.decode,args=[key,],daemon=True).start()
+            key = self.uploader.dequeue()
+            if key is not None:
+                threading.Thread(target=self.uploader.upload,args=[key,],daemon=True).start()
