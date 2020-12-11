@@ -53,51 +53,28 @@ class Decoder(Queue):
             '%s[RoomID:%s]本次录制文件:%s\t最终上传:%s' % (
                 live_info['uname'], live_info['room_id'], ' '.join(input_file), filename))
 
-        output_lst = []
-        for i in input_file:
-            output_lst.append(os.path.join(save_path, 'recording', i.replace('.flv', '.ts')))
-
         for i in range(len(input_file)):
-            input_file[i] = '-i ' + os.path.join(save_path, 'recording', input_file[i])
+            input_file[i] = os.path.join(save_path, 'recording', input_file[i])
 
         output_file = os.path.join(save_path, output_file)
         ffmpeg_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffmpeg', 'bin', 'ffmpeg.exe')
         ffmpeg_log = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'ffmpeg.log')
+        file_path = os.path.join(save_path, 'recording', 'concat.txt')
 
-        for i, o in zip(input_file, output_lst):
-            command = [
-                ffmpeg_path,
-                i,
-                '-c', 'copy',
-                '-bsf:v', 'h264_mp4toannexb',
-                '-f', 'mpegts',
-                '-y',
-                o
-            ]
-            # print(' '.join(command))
-            message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=300)
-            logger.info(message)
-
-        op_cmd = '\"%s\"' % ('concat:' + '|'.join(output_lst))
+        with open(file_path,'w',encoding='utf-8') as a:
+            for line in input_file:
+                a.write('file \'%s\'\n' % line)
 
         command = [
             ffmpeg_path,
-            '-i', op_cmd,
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', file_path,
             '-c', 'copy',
-            '-bsf:a', 'aac_adtstoasc',
-            '-movflags', '+faststart',
-            '-y',
-            output_file
+            '-y', output_file
         ]
         message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=300)
         logger.info(message)
-
-        for tsop in output_lst:
-            try:
-                os.remove(tsop)
-                logger.info('%s has been removed.' % tsop)
-            except:
-                logger.error('%s removed error.' % tsop)
 
         if live_info['need_mask'] == '1':
             width = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][1]['width']
