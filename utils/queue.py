@@ -53,12 +53,13 @@ class Queue():
                     return None
 
     def run(self):
+        threading.Thread(target=self.heartbeat,daemon=True).start()
         while True:
             time.sleep(1)
             if len(self.queue) > 0:
                 key = self.dequeue()
                 if key is not None:
-                    threading.Thread(target=self.func_call, args=[key, ],daemon=True).start()
+                    threading.Thread(target=self.func_call, args=[key, ]).start()
 
     def heartbeat(self):
         while True:

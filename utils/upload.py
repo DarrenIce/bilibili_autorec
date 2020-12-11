@@ -17,44 +17,43 @@ class Upload(Queue):
         self.func = self.upload
 
     def upload(self, key):
+        time.sleep(300)
+        room_lst = [i[0] for i in self.config.config['live']['room_info']]
+        if key not in room_lst:
+            return None
+        live_info = self.infos.copy()[key]
+        if live_info['live_status'] == 1:
+            logger.info('%s[RoomID:%s]直播中，暂不上传' % (live_info['uname'], live_info['room_id']))
+            return None
+        logger.info('%s[RoomID:%s]等待上传' % (live_info['uname'], live_info['room_id']))
         with self._lock2:
-            time.sleep(300)
-            room_lst = [i[0] for i in self.config.config['live']['room_info']]
-            if key not in room_lst:
-                return None
-            live_info = self.infos.copy()[key]
-            if live_info['live_status'] == 1:
-                logger.info('%s[RoomID:%s]直播中，暂不上传' % (live_info['uname'], live_info['room_id']))
-                return None
-            logger.info('%s[RoomID:%s]等待上传' % (live_info['uname'], live_info['room_id']))
-            with self._lock2:
-                logger.info('%s[RoomID:%s]开始本次上传，投稿名称: %s, 本地位置: %s' % (live_info['uname'], live_info['room_id'],live_info['filename'],live_info['filepath']))
-                filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
-                logger.info('%s[RoomID:%s]%s上传成功' % (live_info['uname'], live_info['room_id'],live_info['filename']))
-                data = {
-                    "copyright": 2,
-                    "source": "https://live.bilibili.com/%s" % live_info['room_id'],
-                    "cover": "",
-                    "desc": "",
-                    "desc_format_id": 0,
-                    "dynamic": "",
-                    "interactive": 0,
-                    "no_reprint": 0,
-                    "subtitles": {
-                        "lan": "",
-                        "open": 0
-                    },
-                    "tag": "录播,%s" % live_info['uname'],
-                    "tid": 174,
-                    "title": live_info['filename'],
-                    "videos": [
-                        {
-                            "desc": "",
-                            "filename": filename,
-                            "title": "P1"
-                        }
-                    ]
-                }
-                result = video.video_submit(data, cookies=live_info['cookies'])
-                logger.info('上传结果: %s' % (result))
+            logger.info('%s[RoomID:%s]开始本次上传，投稿名称: %s, 本地位置: %s' % (live_info['uname'], live_info['room_id'],live_info['filename'],live_info['filepath']))
+            filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
+            logger.info('%s[RoomID:%s]%s上传成功' % (live_info['uname'], live_info['room_id'],live_info['filename']))
+            data = {
+                "copyright": 2,
+                "source": "https://live.bilibili.com/%s" % live_info['room_id'],
+                "cover": "",
+                "desc": "",
+                "desc_format_id": 0,
+                "dynamic": "",
+                "interactive": 0,
+                "no_reprint": 0,
+                "subtitles": {
+                    "lan": "",
+                    "open": 0
+                },
+                "tag": "录播,%s" % live_info['uname'],
+                "tid": 174,
+                "title": live_info['filename'],
+                "videos": [
+                    {
+                        "desc": "",
+                        "filename": filename,
+                        "title": "P1"
+                    }
+                ]
+            }
+            result = video.video_submit(data, cookies=live_info['cookies'])
+            logger.info('上传结果: %s' % (result))
             

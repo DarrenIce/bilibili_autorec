@@ -53,6 +53,7 @@ TODO:
 √   设置log level、expire等参数为配置文件，部分可以作为动态调整参数。记得提醒user根据自己电脑配置设置expire,或者每次上传前先os检测一下，没有就放回队列
 √   加一个CPU、内存、网络占用显示
 √   singleton queue 消息队列
+加一个线程的心跳监控，可以看到有哪些线程是在运行的，如果有线程挂了也能看出来
 '''
 
 
@@ -321,9 +322,9 @@ class Live():
             self.unlive(key, True)
 
     def run(self):
-        threading.Thread(target=self.display.run,daemon=True).start()
-        threading.Thread(target=self.decoder.heartbeat,daemon=True).start()
-        threading.Thread(target=self.uploader.heartbeat,daemon=True).start()
+        threading.Thread(target=self.display.run).start()
+        threading.Thread(target=self.decoder.run).start()
+        threading.Thread(target=self.uploader.run).start()
         while True:
             time.sleep(1)
             self.load_realtime()
@@ -331,11 +332,5 @@ class Live():
             live_infos = self.live_infos.copy()
             for key in live_infos:
                 if live_infos[key]['recording'] != 1:
-                    threading.Thread(target=self.download_live, args=[key, ],daemon=True).start()
+                    threading.Thread(target=self.download_live, args=[key, ]).start()
                 time.sleep(0.2)
-            key = self.decoder.dequeue()
-            if key is not None:
-                threading.Thread(target=self.decoder.decode,args=[key,],daemon=True).start()
-            key = self.uploader.dequeue()
-            if key is not None:
-                threading.Thread(target=self.uploader.upload,args=[key,],daemon=True).start()
