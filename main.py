@@ -5,8 +5,10 @@ import threading
 from apscheduler.schedulers.blocking import BlockingScheduler
 import datetime 
 import keyboard
+from utils.threadRecoder import threadRecorder
 
 live = Live()
+threadRecorder = threadRecorder()
 
 def main():
     log_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log')
@@ -25,8 +27,10 @@ def main():
     if not os.path.exists(ffmpeg_log_file):
         with open(ffmpeg_log_file, 'w', encoding='utf-8') as a:
             pass
-    threading.Thread(target=scheduler_run,daemon=True).start()
-    live.run()
+    threading.Thread(target=threadRecorder.heartbeat).start()
+    threadRecorder.add('daily_job',scheduler_run,None,False)
+    live.start()
+    
 
 def daily_job():
     PCSpath = r'.\utils\BaiduPCS-Go.exe'

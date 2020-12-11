@@ -17,6 +17,7 @@ class Log():
             '[%(levelname)s]\t%(asctime)s\t%(filename)s:%(lineno)d\tpid:%(thread)d\t%(message)s')
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
+        self.logger.info('log模块初始化完成')
 
     def __call__(self):
         return self.logger

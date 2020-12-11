@@ -2,6 +2,7 @@ import subprocess
 from pymediainfo import MediaInfo
 from utils.log import Log
 from utils.load_conf import Config
+from utils.threadRecoder import threadRecorder
 from utils.infos import Infos
 import threading
 import os
@@ -22,6 +23,7 @@ class Queue():
         self.queue = []
         self.qname = ''
         self.func = lambda x:time.sleep(400)
+        self.threadRecorder = threadRecorder()
 
     def func_call(self, key):
         with self._lock2:
@@ -53,13 +55,13 @@ class Queue():
                     return None
 
     def run(self):
-        threading.Thread(target=self.heartbeat,daemon=True).start()
+        self.threadRecorder.add('%s heartbeat' % self.qname,self.heartbeat,None,True)
         while True:
             time.sleep(1)
             if len(self.queue) > 0:
                 key = self.dequeue()
                 if key is not None:
-                    threading.Thread(target=self.func_call, args=[key, ]).start()
+                    self.threadRecorder.add('%s_%s' % (self.qname,key),self.func_call,[key,],False)
 
     def heartbeat(self):
         while True:

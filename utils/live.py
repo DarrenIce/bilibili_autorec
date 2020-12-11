@@ -11,6 +11,7 @@ from utils.display import Display
 from utils.load_conf import Config
 from utils.decoder import Decoder
 from utils.infos import Infos
+from utils.threadRecoder import threadRecorder
 from utils.bilibili_api import live
 from win10toast import ToastNotifier
 
@@ -68,6 +69,7 @@ class Live():
         self.display = Display()
         self.decoder = Decoder()
         self.uploader = Upload()
+        self.threadRecorder = threadRecorder()
         logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
@@ -147,6 +149,32 @@ class Live():
         if key not in room_lst:
             return False
         return True
+
+    def judge_download(self,key):
+        if not self.judge_in(key):
+            return False
+        live_info = self.live_infos.copy()[key]
+        if live_info['live_status'] != 1:
+            live_info['recording'] =0
+            self.live_infos.update(key,live_info)
+            return False
+        elif not self.check_live(key) and live_info['live_status'] == 1:
+            live_info['recording'] =2
+            self.live_infos.update(key,live_info)
+            return False
+        elif self.check_live(key) and live_info['live_status'] == 1 and live_info['need_rec'] == '0':
+            live_info['recording']=3
+            self.live_infos.update(key,live_info)
+            return False
+        elif live_info['live_status'] == 1 and live_info['need_rec'] == '1':
+            live_info['recording']=1
+            self.live_infos.update(key,live_info)
+            return True
+        else:
+            logger.warning('%s[RoomID:%s]进入了未知的分支呢' % (live_info['uname'],key))
+            live_info['recording'] =0
+            self.live_infos.update(key,live_info)
+            return False
 
     def get_live_url(self):
         '''
@@ -259,78 +287,67 @@ class Live():
     def download_live(self, key):
         if not self.judge_in(key):
             return None
+        save_path = os.path.join(self.base_path, self.live_infos.get(key)['uname'], 'recording')
+        logger.info('%s[RoomID:%s]准备下载直播流,保存在%s' % (self.live_infos.get(key)['uname'], key, save_path))
+        self.live_infos.get(key)['recording'] = 1
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
 
-        if self.live_infos.get(key)['live_status'] != 1:
+        stream = self.get_stream(key)
+        if stream is None:
+            logger.error('%s[RoomID:%s]获取直播流失败' % (self.live_infos.get(key)['uname'], key))
+            self.live_infos.get(key)['record_start_time'] = ''
             self.live_infos.get(key)['recording'] = 0
             return
-
-        if not self.check_live(key) and self.live_infos.get(key)['live_status'] == 1:
-            self.live_infos.get(key)['recording'] = 2
+        filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
+        self.live_infos.get(key)['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            fd = stream.open()
+        except Exception as e:
+            self.unlive(key,unlived=False)
+            logger.critical('%s[RoomID:%s]fd open error' % (self.live_infos.get(key)['uname'], key))
+            logger.error(e)
             return
-
-        if self.check_live(key) and self.live_infos.get(key)['live_status'] == 1 and self.live_infos.get(key)['need_rec'] == '0':
-            self.live_infos.get(key)['recording'] = 3
-            return
-
-        if self.live_infos.get(key)['live_status'] == 1 and self.live_infos.get(key)['need_rec'] == '1':
-            save_path = os.path.join(self.base_path, self.live_infos.get(key)['uname'], 'recording')
-            logger.info('%s[RoomID:%s]准备下载直播流,保存在%s' % (self.live_infos.get(key)['uname'], key, save_path))
-            self.live_infos.get(key)['recording'] = 1
-            if not os.path.exists(save_path):
-                os.makedirs(save_path)
-
-            stream = self.get_stream(key)
-            if stream is None:
-                logger.error('%s[RoomID:%s]获取直播流失败' % (self.live_infos.get(key)['uname'], key))
-                self.live_infos.get(key)['record_start_time'] = ''
-                self.live_infos.get(key)['recording'] = 0
-                return
-            filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
-            self.live_infos.get(key)['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            try:
-                fd = stream.open()
-            except Exception as e:
-                self.unlive(key,unlived=False)
-                logger.critical('%s[RoomID:%s]fd open error' % (self.live_infos.get(key)['uname'], key))
-                logger.error(e)
-                return
-            with open(filename, 'wb') as f:
-                while self.judge_in(key) and self.live_infos.get(key)['live_status'] == 1 and self.live_infos.get(key)[
-                    'need_rec'] == '1' and self.check_live(key):
-                    try:
-                        data = fd.read(1024 * 8)
-                        if len(data) > 0:
-                            f.write(data)
-                        else:
-                            fd.close()
-                            logger.warning('%s[RoomID:%s]直播流断开,尝试重连' % (self.live_infos.get(key)['uname'], key))
-                            stream = self.get_stream(key)
-                            if stream is None:
-                                logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos.get(key)['uname'], key))
-                                self.unlive(key, True)
-                                return
-                            else:
-                                logger.info('%s[RoomID:%s]重连成功' % (self.live_infos.get(key)['uname'], key))
-                                fd = stream.open()
-                    except Exception as e:
+        with open(filename, 'wb') as f:
+            while self.judge_in(key) and self.live_infos.get(key)['live_status'] == 1 and self.live_infos.get(key)[
+                'need_rec'] == '1' and self.check_live(key):
+                try:
+                    data = fd.read(1024 * 8)
+                    if len(data) > 0:
+                        f.write(data)
+                    else:
                         fd.close()
-                        self.unlive(key,unlived=False)
-                        logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos.get(key)['uname'], key))
-                        logger.error(e)
-                        return
-            fd.close()
-            self.unlive(key, True)
+                        logger.warning('%s[RoomID:%s]直播流断开,尝试重连' % (self.live_infos.get(key)['uname'], key))
+                        stream = self.get_stream(key)
+                        if stream is None:
+                            logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos.get(key)['uname'], key))
+                            self.unlive(key, True)
+                            return
+                        else:
+                            logger.info('%s[RoomID:%s]重连成功' % (self.live_infos.get(key)['uname'], key))
+                            fd = stream.open()
+                except Exception as e:
+                    fd.close()
+                    self.unlive(key,unlived=False)
+                    logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos.get(key)['uname'], key))
+                    logger.error(e)
+                    return
+        fd.close()
+        self.unlive(key, True)
 
     def run(self):
-        threading.Thread(target=self.display.run).start()
-        threading.Thread(target=self.decoder.run).start()
-        threading.Thread(target=self.uploader.run).start()
         while True:
             time.sleep(1)
             self.load_realtime()
             self.get_live_url()
             live_infos = self.live_infos.copy()
             for key in live_infos:
-                if live_infos[key]['recording'] != 1:
-                    threading.Thread(target=self.download_live, args=[key, ]).start()
+                if live_infos[key]['recording'] != 1 and self.judge_download(key):
+                    self.threadRecorder.add('download_live_%s' % (key),self.download_live,[key,],False)
                 time.sleep(0.2)
+
+    def start(self):
+        self.threadRecorder.add('display_run',self.display.run,None,False)
+        self.threadRecorder.add('decoder_run',self.decoder.run,None,False)
+        self.threadRecorder.add('uploader_run',self.uploader.run,None,False)
+        self.threadRecorder.add('live_run',self.run,None,False)
