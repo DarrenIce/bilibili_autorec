@@ -53,6 +53,10 @@ class Decoder(Queue):
             '%s[RoomID:%s]本次录制文件:%s\t最终上传:%s' % (
                 live_info['uname'], live_info['room_id'], ' '.join(input_file), filename))
 
+        output_lst = []
+        for i in input_file:
+            output_lst.append(os.path.join(save_path, 'recording', i.replace('.flv', '.ts')))
+
         for i in range(len(input_file)):
             input_file[i] = os.path.join(save_path, 'recording', input_file[i])
 
@@ -62,8 +66,19 @@ class Decoder(Queue):
         file_path = os.path.join(save_path, 'recording', 'concat.txt')
 
         with open(file_path,'w',encoding='utf-8') as a:
-            for line in input_file:
+            for line in output_lst:
                 a.write('file \'%s\'\n' % line)
+
+        for i, o in zip(input_file, output_lst):
+            command = [
+                ffmpeg_path,
+                '-i', i,
+                '-c', 'copy',
+                '-y', o
+            ]
+            # print(' '.join(command))
+            message = subprocess.run(command)
+            logger.info(message)
 
         command = [
             ffmpeg_path,
@@ -99,5 +114,7 @@ class Decoder(Queue):
             logger.info(message)
 
         logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))
+        if not os.path.exists(output_file):
+            logger.error('%s[RoomID:%s]转码失败' % (live_info['uname'], live_info['room_id']))
         if live_info['need_upload'] == '1':
             self.uploader.enqueue(key)

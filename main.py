@@ -12,7 +12,7 @@ threadRecorder = threadRecorder()
 
 def main():
     log_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log')
-    keyboard.add_hotkey('ctrl+.', os._exit, args=[0])
+    keyboard.add_hotkey('ctrl+alt+;', os._exit, args=[0])
     if not os.path.exists(log_path):
         os.mkdir(log_path)
     log_file = os.path.join(log_path, 'log.log')
