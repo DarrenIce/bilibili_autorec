@@ -65,8 +65,5 @@ class Queue():
 
     def heartbeat(self):
         while True:
+            time.sleep(180)
             logger.info('当前%s队列情况: %s' % (self.qname, ' '.join([self.infos.copy()[key]['uname'] for key in self.queue])))
-            if self.queue == []:
-                time.sleep(300)
-            else:
-                time.sleep(60)
