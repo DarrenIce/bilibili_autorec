@@ -1,4 +1,3 @@
-from utils.live import Live
 import os
 import subprocess
 import threading
@@ -24,6 +23,7 @@ if not os.path.exists(ffmpeg_log_file):
     with open(ffmpeg_log_file, 'w', encoding='utf-8') as a:
         pass
 
+from utils.live import Live
 live = Live()
 threadRecorder = threadRecorder()
 
