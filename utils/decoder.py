@@ -91,6 +91,13 @@ class Decoder(Queue):
         message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=300)
         logger.info(message)
 
+        for tsop in output_lst:
+            try:
+                os.remove(tsop)
+                logger.info('%s has been removed.' % tsop)
+            except:
+                logger.error('%s removed error.' % tsop)
+
         if live_info['need_mask'] == '1':
             width = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][1]['width']
             height = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][1]['height']
@@ -112,9 +119,9 @@ class Decoder(Queue):
             ]
             message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=3600)
             logger.info(message)
-
-        logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))
-        if not os.path.exists(output_file):
+        if os.path.exists(output_file):
+            logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))
+        else:
             logger.error('%s[RoomID:%s]转码失败' % (live_info['uname'], live_info['room_id']))
         if live_info['need_upload'] == '1':
             self.uploader.enqueue(key)
