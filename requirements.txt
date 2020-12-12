@@ -4,3 +4,4 @@ keyboard
 pymediainfo
 apscheduler
 psutil
+bilibili_api
