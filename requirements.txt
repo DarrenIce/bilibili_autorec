@@ -5,3 +5,5 @@ pymediainfo
 apscheduler
 psutil
 bilibili_api
+typing_extensions
+rich
