@@ -5,7 +5,8 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 import datetime 
 import keyboard
 
-log_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'log')
+base = os.path.dirname(os.path.realpath(__file__))
+log_path = os.path.join(base, 'log')
 keyboard.add_hotkey('ctrl+alt+;', os._exit, args=[0])
 if not os.path.exists(log_path):
     os.mkdir(log_path)
@@ -35,7 +36,7 @@ def main():
 
 def daily_job():
     PCSpath = r'.\utils\BaiduPCS-Go.exe'
-    local_base_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'rec')
+    local_base_path = os.path.join(base, 'rec')
     pcs_base_path = '录播/%s'
     live_infos = live.live_infos.copy()
     for key in live_infos:

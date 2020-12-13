@@ -77,18 +77,38 @@ class Decoder(Queue):
                 '-y', o
             ]
             # print(' '.join(command))
-            message = subprocess.run(command)
+            message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
             logger.info(message)
 
-        command = [
-            ffmpeg_path,
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', file_path,
-            '-c', 'copy',
-            '-y', output_file
-        ]
-        message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=300)
+        flag = False
+        for o in output_lst:
+            if json.loads(MediaInfo.parse(o).to_json())['tracks'][0]['overall_bit_rate'] > 4000000:
+                flag = True
+
+        if flag:
+            command = [
+                ffmpeg_path,
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', file_path,
+                '-c:v', 'libx264',
+                '-c:a', 'copy',
+                '-crf', '17',
+                '-maxrate', '4M',
+                '-bufsize', '4M',
+                '-preset','fast',
+                '-y', output_file
+            ]
+        else:
+            command = [
+                ffmpeg_path,
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', file_path,
+                '-c', 'copy',
+                '-y', output_file
+            ]
+        message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
         logger.info(message)
 
         for tsop in output_lst:
