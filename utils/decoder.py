@@ -144,4 +144,8 @@ class Decoder(Queue):
         else:
             logger.error('%s[RoomID:%s]转码失败' % (live_info['uname'], live_info['room_id']))
         if live_info['need_upload'] == '1':
-            self.uploader.enqueue(key)
+            dura = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][0]['duration']
+            if dura >= 7200000:
+                self.uploader.enqueue(key)
+            else:
+                logger.error('%s[RoomID:%s]录制时长不足' % (live_info['uname'], live_info['room_id']))
