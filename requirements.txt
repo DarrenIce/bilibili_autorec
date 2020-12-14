@@ -7,3 +7,5 @@ psutil
 bilibili_api
 typing_extensions
 rich
+typing_extensions
+rsa

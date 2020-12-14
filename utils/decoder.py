@@ -19,6 +19,7 @@ class Decoder(Queue):
         self.qname = '转码'
         self.func = self.decode
         self.uploader = Upload()
+        self.base_num = 1000
 
     def decode(self, key):
         '''

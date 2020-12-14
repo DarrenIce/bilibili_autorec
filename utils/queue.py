@@ -24,15 +24,26 @@ class Queue():
         self.qname = ''
         self.func = lambda x:time.sleep(400)
         self.threadRecorder = threadRecorder()
+        self.base_num = 0
 
     def func_call(self, key):
         with self._lock2:
             logger.info('%s 开始%s' % (self.infos.copy()[key]['uname'], self.qname))
+            live_info = self.infos.copy()[key]
+            live_info['queue_status'] = self.base_num
+            self.infos.update(key, live_info)
             self.func(key)
 
+    def update_status(self):
+        for key in self.queue:
+            live_info = self.infos.copy()[key]
+            live_info['queue_status'] = self.base_num + self.queue.index(key) + 1
+            self.infos.update(key, live_info)
 
     def enqueue(self, key):
         with self._lock:
+            live_info = self.infos.copy()[key]
+            live_info['queue_status'] = self.base_num + len(self.queue) + 1
             if key not in self.queue:
                 self.queue.append(key)
                 logger.info('%s 进入%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
@@ -40,6 +51,7 @@ class Queue():
                 self.queue.remove(key)
                 self.queue.append(key)
                 logger.info('%s 在%s等待队列中的状态更新了' % (self.infos.copy()[key]['uname'],self.qname))
+            self.infos.update(key, live_info)
 
     def dequeue(self):
         if self._lock2.locked():
@@ -49,6 +61,7 @@ class Queue():
                 if len(self.queue) > 0:
                     key = self.queue[0]
                     del self.queue[0]
+                    self.update_status()
                     logger.info('%s 退出%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
                     return key
                 else:

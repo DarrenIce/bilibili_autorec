@@ -20,10 +20,11 @@ class Info:
     room_id: str
     anchor: str
     title: str
-    live_status: str
-    record_status: str
+    live_status: int
+    record_status: int
     start_time: str
     record_start_time: str
+    queue_status: int
 
     @property
     def live_status_map(self) -> str:
@@ -52,6 +53,23 @@ class Info:
         else:
             return '0s'
 
+    @property
+    def queue_status_map(self) -> str:
+        if self.queue_status == 0:
+            return '[red]不在队列里哦'
+        elif self.queue_status >= 1000 and self.queue_status < 2000:
+            if self.queue_status == 1000:
+                return '[green]正在转码'
+            else:
+                return '[blue]等待转码中，目前为第%s个' % (self.queue_status % 1000)
+        elif self.queue_status >=2000 and self.queue_status < 3000:
+            if self.queue_status == 2000:
+                return '[green]正在上传'
+            else:
+                return '[blue]等待上传中，目前为第%s个' % (self.queue_status % 2000)
+        else:
+            return '[yellow]收到了奇怪的参数'
+
 class Display():
     def __init__(self):
         self.console = Console(force_terminal=True, color_system='truecolor')
@@ -75,7 +93,8 @@ class Display():
                     record_status=live_info['recording'],
                     start_time=datetime.datetime.fromtimestamp(live_info['live_start_time']).strftime(
                         '%Y-%m-%d %H:%M:%S'),
-                    record_start_time=live_info['record_start_time']
+                    record_start_time=live_info['record_start_time'],
+                    queue_status=live_info['queue_status']
                 )
             except Exception as e:
                 continue
@@ -87,11 +106,11 @@ class Display():
         infos = sorted(
             [self.generate_info(rid, live_infos[key]) for key, rid in
                 zip(live_infos.keys(), range(len(live_infos)))],
-            key=lambda i: dct[i.live_status] + 30 * dct2[i.record_status] - i.row_id,
+            key=lambda i: dct[i.live_status] + 30 * dct2[i.record_status] - i.row_id + i.queue_status,
             reverse=True
         )
         table1 = Table(
-            "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长",
+            "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长","队列情况",
             title="%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             box=box.SIMPLE
         )
@@ -106,6 +125,7 @@ class Display():
                 info.record_status_map,
                 info.start_time,
                 info.record_time,
+                info.queue_status_map
             )
 
         table2 = Table(
