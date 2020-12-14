@@ -119,6 +119,9 @@ class Live():
             if lst[0] not in live_infos:
                 live_info = {}
                 live_info['record_start_time'] = ''
+                live_info['queue_status'] = 0
+                live_info['recording'] = 0
+                live_info['finish_time'] = ''
             else:
                 live_info = live_infos[lst[0]]
             live_info['need_rec'] = lst[1]
@@ -212,10 +215,6 @@ class Live():
                     live_info['uname'], time.strftime("%Y%m%d%H%M%S", time.localtime()))
                 live_info['title'] = info['room_info']['title']
                 live_info['live_start_time'] = info['room_info']['live_start_time']
-                if 'recording' not in live_info:
-                    live_info['recording'] = 0
-                if 'queue_status' not in live_info:
-                    live_info['queue_status'] = 0
                 self.live_infos.update(id,live_info)
                 logger.debug(
                     '%s[RoomID:%s]直播状态\t%s' % (live_info['uname'], id, live_info['live_status']))

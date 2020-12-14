@@ -25,6 +25,7 @@ class Info:
     start_time: str
     record_start_time: str
     queue_status: int
+    finish_time: str
 
     @property
     def live_status_map(self) -> str:
@@ -94,7 +95,8 @@ class Display():
                     start_time=datetime.datetime.fromtimestamp(live_info['live_start_time']).strftime(
                         '%Y-%m-%d %H:%M:%S'),
                     record_start_time=live_info['record_start_time'],
-                    queue_status=live_info['queue_status']
+                    queue_status=live_info['queue_status'],
+                    finish_time = live_info['finish_time']
                 )
             except Exception as e:
                 continue
@@ -110,7 +112,7 @@ class Display():
             reverse=True
         )
         table1 = Table(
-            "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长","队列情况",
+            "行号", "房间ID", "主播", "直播标题", "直播状态", "录制状态", "开播时间", "录制时长","队列情况","完成时间",
             title="%s" % datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             box=box.SIMPLE
         )
@@ -125,7 +127,8 @@ class Display():
                 info.record_status_map,
                 info.start_time,
                 info.record_time,
-                info.queue_status_map
+                info.queue_status_map,
+                info.finish_time
             )
 
         table2 = Table(

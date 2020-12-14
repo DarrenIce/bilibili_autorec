@@ -43,6 +43,8 @@ class Upload(Queue):
         live_info = self.infos.copy()[key]
         if live_info['live_status'] == 1 and self.check_live(key):
             logger.info('%s[RoomID:%s]直播中，暂不上传' % (live_info['uname'], live_info['room_id']))
+            live_info['queue_status'] = 0
+            self.infos.update(key,live_info)
             return None
         logger.info('%s[RoomID:%s]开始本次上传，投稿名称: %s, 本地位置: %s' % (live_info['uname'], live_info['room_id'],live_info['filename'],live_info['filepath']))
         filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
