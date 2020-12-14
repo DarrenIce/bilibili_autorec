@@ -37,7 +37,7 @@ def main():
 def daily_job():
     PCSpath = r'.\utils\BaiduPCS-Go.exe'
     local_base_path = os.path.join(base, 'rec')
-    pcs_base_path = '录播/%s'
+    pcs_base_path = '/录播/%s'
     live_infos = live.live_infos.copy()
     for key in live_infos:
         name = live_infos[key]['uname']
