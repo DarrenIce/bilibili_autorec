@@ -214,6 +214,8 @@ class Live():
                 live_info['live_start_time'] = info['room_info']['live_start_time']
                 if 'recording' not in live_info:
                     live_info['recording'] = 0
+                if 'queue_status' not in live_info:
+                    live_info['queue_status'] = 0
                 self.live_infos.update(id,live_info)
                 logger.debug(
                     '%s[RoomID:%s]直播状态\t%s' % (live_info['uname'], id, live_info['live_status']))

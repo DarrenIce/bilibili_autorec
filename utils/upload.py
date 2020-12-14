@@ -16,6 +16,7 @@ class Upload(Queue):
         super().__init__()
         self.qname = '上传'
         self.func = self.upload
+        self.base_num = 2000
 
     def check_live(self, key):
         duration = self.infos.get(key)['duration']

@@ -30,7 +30,7 @@ threadRecorder = threadRecorder()
 
 def main():
     threading.Thread(target=threadRecorder.heartbeat).start()
-    threadRecorder.add('daily_job',scheduler_run,None,False)
+    threadRecorder.add('daily_job',scheduler_run,None,True)
     live.start()
     
 
