@@ -57,23 +57,23 @@ class Info:
     @property
     def queue_status_map(self) -> str:
         if self.queue_status == 0:
-            return '[red]不在队列里哦'
+            return '[bold light_steel_blue]不在队列里哦'
         elif self.queue_status >= 1000 and self.queue_status < 2000:
             if self.queue_status == 1000:
-                return '[green]正在转码'
+                return '[bold green]正在转码'
             elif self.queue_status == 1500:
                 return '[bold cyan]转码完成'
             else:
-                return '[blue]等待转码中，目前为第%s个' % (self.queue_status % 1000)
+                return '[bold blue]等待转码中，目前为第%s个' % (self.queue_status % 1000)
         elif self.queue_status >=2000 and self.queue_status < 3000:
             if self.queue_status == 2000:
-                return '[green]正在上传'
+                return '[bold green]正在上传'
             elif self.queue_status == 2500:
-                return '[bold cyan]上传完成'
+                return '[bold medium_orchid3]上传完成'
             else:
-                return '[blue]等待上传中，目前为第%s个' % (self.queue_status % 2000)
+                return '[bold blue]等待上传中，目前为第%s个' % (self.queue_status % 2000)
         else:
-            return '[yellow]收到了奇怪的参数'
+            return '[bold light_pink1 blink]收到了奇怪的参数'
 
 class Display():
     def __init__(self):
