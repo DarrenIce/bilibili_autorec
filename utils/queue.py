@@ -34,6 +34,7 @@ class Queue():
             self.infos.update(key, live_info)
             self.func(key)
             live_info['queue_status'] = self.base_num + 500
+            live_info['finish_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             self.infos.update(key, live_info)
 
     def update_status(self):
