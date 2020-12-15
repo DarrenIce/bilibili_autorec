@@ -28,48 +28,72 @@ class Info:
     finish_time: str
 
     @property
+    def room_id_map(self) -> str:
+        return '[cornsilk1]%s' % (self.room_id)
+
+    @property
+    def anchor_map(self) -> str:
+        return '[wheat1]%s' % (self.anchor)
+
+    @property
+    def title_map(self) -> str:
+        return '[khaki1]%s' % (self.title)
+
+    @property
+    def start_time_map(self) -> str:
+        return '[navajo_white1]%s' % (self.start_time)
+
+    @property
     def live_status_map(self) -> str:
         if self.live_status == 1:
-            return '[green]直播中'
+            return '[bold spring_green1]直播中'
         elif self.live_status == 2:
-            return '[blue]轮播中'
+            return '[bold sky_blue2]轮播中'
         else:
-            return '[red]未开播'
+            return '[bold hot_pink3]未开播'
 
     @property
     def record_status_map(self) -> str:
         if self.record_status == 1:
-            return '[green]录制中'
+            return '[bold spring_green1]录制中'
         elif self.record_status == 0:
-            return '[red]未开播'
+            return '[bold hot_pink3]未开播'
         elif self.record_status == 2:
-            return '[blue]不在直播期间'
+            return '[bold salmon1]不在直播期间'
         elif self.record_status == 3:
-            return '[yellow]不录制该房间'
+            return '[bold dark_olive_green1]不录制该房间'
 
     @property
     def record_time(self) -> str:
         if self.record_start_time != '':
-            return str((datetime.datetime.now() - datetime.datetime.strptime(self.record_start_time,'%Y-%m-%d %H:%M:%S')))
+            return '[misty_rose1]%s' % str((datetime.datetime.now() - datetime.datetime.strptime(self.record_start_time,'%Y-%m-%d %H:%M:%S')))
         else:
-            return '0s'
+            return '[misty_rose1]0s'
 
     @property
     def queue_status_map(self) -> str:
         if self.queue_status == 0:
-            return '[red]不在队列里哦'
+            return '[bold light_steel_blue]不在队列里哦'
         elif self.queue_status >= 1000 and self.queue_status < 2000:
             if self.queue_status == 1000:
-                return '[green]正在转码'
+                return '[bold spring_green1]正在转码'
+            elif self.queue_status == 1500:
+                return '[bold cyan]转码完成'
             else:
-                return '[blue]等待转码中，目前为第%s个' % (self.queue_status % 1000)
+                return '[bold sky_blue2]等待转码中，目前为第%s个' % (self.queue_status % 1000)
         elif self.queue_status >=2000 and self.queue_status < 3000:
             if self.queue_status == 2000:
-                return '[green]正在上传'
+                return '[bold spring_green1]正在上传'
+            elif self.queue_status == 2500:
+                return '[bold medium_orchid3]上传完成'
             else:
-                return '[blue]等待上传中，目前为第%s个' % (self.queue_status % 2000)
+                return '[bold sky_blue2]等待上传中，目前为第%s个' % (self.queue_status % 2000)
         else:
-            return '[yellow]收到了奇怪的参数'
+            return '[bold light_pink1 blink]收到了奇怪的参数'
+
+    @property
+    def finish_time_map(self) -> str:
+        return '[thistle1]%s' % (self.finish_time)
 
 class Display():
     def __init__(self):
@@ -120,15 +144,15 @@ class Display():
         for info in infos:
             table1.add_row(
                 str(info.row_id),
-                info.room_id,
-                info.anchor,
-                info.title,
+                info.room_id_map,
+                info.anchor_map,
+                info.title_map,
                 info.live_status_map,
                 info.record_status_map,
-                info.start_time,
+                info.start_time_map,
                 info.record_time,
                 info.queue_status_map,
-                info.finish_time
+                info.finish_time_map
             )
 
         table2 = Table(

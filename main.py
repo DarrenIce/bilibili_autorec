@@ -2,12 +2,15 @@ import os
 import subprocess
 import threading
 from apscheduler.schedulers.blocking import BlockingScheduler
-import datetime 
-import keyboard
-
+import datetime
+import sys
+import platform
+if sys.platform == 'win32':
+    import keyboard
+    keyboard.add_hotkey('ctrl+alt+;', os._exit, args=[0])
+    
 base = os.path.dirname(os.path.realpath(__file__))
 log_path = os.path.join(base, 'log')
-keyboard.add_hotkey('ctrl+alt+;', os._exit, args=[0])
 if not os.path.exists(log_path):
     os.mkdir(log_path)
 log_file = os.path.join(log_path, 'log.log')
@@ -48,7 +51,7 @@ def daily_job():
             for f in os.listdir(base_path):
                 if os.path.isfile(os.path.join(base_path,f)):
                     if '_mask' not in f:
-                        x = f.rstrip('.mp4').lstrip(name+'_')
+                        x = '.'.join(f.split('.')[:-1]).split('_')[-1]
                         if (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d') == x:
                             a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
                             print(a)

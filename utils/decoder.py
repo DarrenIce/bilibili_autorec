@@ -47,8 +47,21 @@ class Decoder(Queue):
             if (latest_time - t).total_seconds() < int(live_info['maxsecond']):
                 input_file.append(f)
 
-        output_file = re.search(r'.*?_\d{8}', input_file[0]).group() + '.mp4'
-        filename = ''.join(output_file.replace('.mp4', '').split('_'))
+        file_time = datetime.datetime.fromtimestamp(os.stat(os.path.join(save_path, 'recording', input_file[0])).st_ctime)
+        if file_time < datetime.datetime.strptime(datetime.datetime.now().strftime('%Y%m%d %H%M%S').split(' ')[0] + ' 030000', '%Y%m%d %H%M%S'):
+            ftime = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y%m%d %H%M%S').split(' ')[0]
+        else:
+            ftime = datetime.datetime.now().strftime('%Y%m%d %H%M%S').split(' ')[0]
+
+        # output_file = re.search(r'.*?_\d{8}', input_file[0]).group() + '.mp4'
+        # filename = ''.join(output_file.replace('.mp4', '').split('_'))
+        filename = '%s%s' % (live_info['uname'],ftime)
+        output_file = '%s_%s.mp4' % (live_info['uname'],ftime)
+        output_file = os.path.join(save_path, output_file)
+        live_info['filename'] = filename
+        live_info['filepath'] = output_file
+        if live_info['need_mask'] == '1':
+            live_info['filepath'] = live_info['filepath'].replace('.mp4','_mask.mp4')
 
         logger.info(
             '%s[RoomID:%s]本次录制文件:%s\t最终上传:%s' % (
@@ -61,7 +74,6 @@ class Decoder(Queue):
         for i in range(len(input_file)):
             input_file[i] = os.path.join(save_path, 'recording', input_file[i])
 
-        output_file = os.path.join(save_path, output_file)
         ffmpeg_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ffmpeg', 'bin', 'ffmpeg.exe')
         ffmpeg_log = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'ffmpeg.log')
         file_path = os.path.join(save_path, 'recording', 'concat.txt')
@@ -144,6 +156,7 @@ class Decoder(Queue):
             logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))
         else:
             logger.error('%s[RoomID:%s]转码失败' % (live_info['uname'], live_info['room_id']))
+        self.infos.update(key,live_info)
         if live_info['need_upload'] == '1':
             dura = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][0]['duration']
             if dura >= 7200000:
