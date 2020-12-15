@@ -279,13 +279,13 @@ class Live():
         live_info['record_start_time'] = ''
         if unlived:
             logger.info('%s[RoomID:%s]确认下播，加入转码上传队列' % (live_info['uname'], key))
-            if live_info['need_upload'] == '1':
-                live_info['filename'] = live_info['uname'] + live_info['duration'].split('-')[0].split(' ')[0]
-                live_info['filepath'] = os.path.join(self.base_path, live_info['uname'], '%s_%s' % (live_info['uname'], live_info['duration'].split('-')[0].split(' ')[0]))
-                if live_info['need_mask'] == '1':
-                    live_info['filepath'] += '_mask.mp4'
-                else:
-                    live_info['filepath'] += '.mp4'
+            # if live_info['need_upload'] == '1':
+            #     live_info['filename'] = live_info['uname'] + live_info['duration'].split('-')[0].split(' ')[0]
+            #     live_info['filepath'] = os.path.join(self.base_path, live_info['uname'], '%s_%s' % (live_info['uname'], live_info['duration'].split('-')[0].split(' ')[0]))
+            #     if live_info['need_mask'] == '1':
+            #         live_info['filepath'] += '_mask.mp4'
+            #     else:
+            #         live_info['filepath'] += '.mp4'
             self.decoder.enqueue(key)
         self.live_infos.update(key,live_info)    
 

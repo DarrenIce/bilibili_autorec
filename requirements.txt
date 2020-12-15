@@ -8,3 +8,4 @@ bilibili_api
 typing_extensions
 rich
 rsa
+toml

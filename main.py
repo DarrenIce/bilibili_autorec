@@ -2,12 +2,15 @@ import os
 import subprocess
 import threading
 from apscheduler.schedulers.blocking import BlockingScheduler
-import datetime 
-import keyboard
-
+import datetime
+import sys
+import platform
+if sys.platform == 'win32':
+    import keyboard
+    keyboard.add_hotkey('ctrl+alt+;', os._exit, args=[0])
+    
 base = os.path.dirname(os.path.realpath(__file__))
 log_path = os.path.join(base, 'log')
-keyboard.add_hotkey('ctrl+alt+;', os._exit, args=[0])
 if not os.path.exists(log_path):
     os.mkdir(log_path)
 log_file = os.path.join(log_path, 'log.log')
