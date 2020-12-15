@@ -61,11 +61,15 @@ class Info:
         elif self.queue_status >= 1000 and self.queue_status < 2000:
             if self.queue_status == 1000:
                 return '[green]正在转码'
+            elif self.queue_status == 1500:
+                return '[bold cyan]转码完成'
             else:
                 return '[blue]等待转码中，目前为第%s个' % (self.queue_status % 1000)
         elif self.queue_status >=2000 and self.queue_status < 3000:
             if self.queue_status == 2000:
                 return '[green]正在上传'
+            elif self.queue_status == 2500:
+                return '[bold cyan]上传完成'
             else:
                 return '[blue]等待上传中，目前为第%s个' % (self.queue_status % 2000)
         else:

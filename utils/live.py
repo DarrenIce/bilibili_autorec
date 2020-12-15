@@ -1,5 +1,7 @@
 import os
+import sys
 import time
+import platform
 import datetime
 import threading
 import streamlink
@@ -13,7 +15,8 @@ from utils.decoder import Decoder
 from utils.infos import Infos
 from utils.threadRecoder import threadRecorder
 from utils.bilibili_api import live
-from win10toast import ToastNotifier
+if sys.platform == 'win32':
+    from win10toast import ToastNotifier
 
 console = Console()
 headers = {

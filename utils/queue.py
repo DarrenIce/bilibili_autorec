@@ -33,6 +33,8 @@ class Queue():
             live_info['queue_status'] = self.base_num
             self.infos.update(key, live_info)
             self.func(key)
+            live_info['queue_status'] = self.base_num + 500
+            self.infos.update(key, live_info)
 
     def update_status(self):
         for key in self.queue:

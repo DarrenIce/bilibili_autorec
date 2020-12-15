@@ -48,7 +48,7 @@ def daily_job():
             for f in os.listdir(base_path):
                 if os.path.isfile(os.path.join(base_path,f)):
                     if '_mask' not in f:
-                        x = f.rstrip('.mp4').lstrip(name+'_')
+                        x = '.'.join(f.split('.')[:-1]).split('_')[-1]
                         if (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d') == x:
                             a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
                             print(a)
