@@ -132,7 +132,7 @@ class Display():
         infos = sorted(
             [self.generate_info(rid, live_infos[key]) for key, rid in
                 zip(live_infos.keys(), range(len(live_infos)))],
-            key=lambda i: dct[i.live_status] + 30 * dct2[i.record_status] - i.row_id + i.queue_status,
+            key=lambda i: dct[i.live_status] * 100 + 100 * dct2[i.record_status] - i.row_id + i.queue_status,
             reverse=True
         )
         table1 = Table(

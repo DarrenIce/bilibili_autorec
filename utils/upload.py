@@ -47,7 +47,11 @@ class Upload(Queue):
             self.infos.update(key,live_info)
             return None
         logger.info('%s[RoomID:%s]开始本次上传，投稿名称: %s, 本地位置: %s' % (live_info['uname'], live_info['room_id'],live_info['filename'],live_info['filepath']))
-        filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
+        try:
+            filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
+        except:
+            logger.error('%s[RoomID:%s]上传失败' % (live_info['uname'], live_info['room_id']))
+            return None
         logger.info('%s[RoomID:%s]%s上传成功' % (live_info['uname'], live_info['room_id'],live_info['filename']))
         data = {
             "copyright": 2,
@@ -73,6 +77,9 @@ class Upload(Queue):
                 }
             ]
         }
-        result = video.video_submit(data, cookies=live_info['cookies'])
-        logger.info('上传结果: %s' % (result))
-            
+        try:
+            result = video.video_submit(data, cookies=live_info['cookies'])
+            logger.info('上传结果: %s' % (result))
+        except:
+            logger.error('%s[RoomID:%s]投稿失败' % (live_info['uname'], live_info['room_id']))
+            return None

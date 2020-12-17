@@ -240,15 +240,21 @@ class Live():
         session = streamlink.Streamlink()
         session.set_option("http-cookies", self.cookies)
         session.set_option("http-headers", headers)
-        log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'stream.log')
-        session.set_loglevel("debug")
-        session.set_logoutput(open(log_path, 'a',encoding='utf-8'))
+        # log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'stream.log')
+        # session.set_loglevel("debug")
+        # session.set_logoutput(open(log_path, 'a',encoding='utf-8'))
         streams = None
+        retry = 0
         while streams is None:
             try:
-                streams = session.streams('https://live.bilibili.com/%s' % key)
+                if retry < 3:
+                    streams = session.streams('https://live.bilibili.com/%s' % key)
+                else:
+                    logger.warning('%s[RoomID:%s]获取直播流失败，重试次数已达上限' % (live_info['uname'], key))
+                    return None
             except:
                 logger.warning('%s[RoomID:%s]获取直播流失败，正在重试' % (live_info['uname'], key))
+                retry += 1
                 time.sleep(1)
         if streams == {}:
             logger.error('%s[RoomID:%s]未获取到直播流，可能是下播或者网络问题' % (live_info['uname'], key))
