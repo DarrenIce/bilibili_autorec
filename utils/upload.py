@@ -51,6 +51,7 @@ class Upload(Queue):
             filename = video.video_upload(live_info['filepath'], cookies=live_info['cookies'])
         except:
             logger.error('%s[RoomID:%s]上传失败' % (live_info['uname'], live_info['room_id']))
+            self.enqueue(key)
             return None
         logger.info('%s[RoomID:%s]%s上传成功' % (live_info['uname'], live_info['room_id'],live_info['filename']))
         data = {
@@ -82,4 +83,5 @@ class Upload(Queue):
             logger.info('上传结果: %s' % (result))
         except:
             logger.error('%s[RoomID:%s]投稿失败' % (live_info['uname'], live_info['room_id']))
+            self.enqueue(key)
             return None

@@ -91,7 +91,7 @@ class Decoder(Queue):
             ]
             # print(' '.join(command))
             message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
-            logger.info(message)
+            Log().debug_logger.info(message)
 
         flag = False
         for o in output_lst:
@@ -122,7 +122,7 @@ class Decoder(Queue):
                 '-y', output_file
             ]
         message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
-        logger.info(message)
+        Log().debug_logger.info(message)
 
         for tsop in output_lst:
             try:
@@ -151,7 +151,7 @@ class Decoder(Queue):
                 output_file2
             ]
             message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=3600)
-            logger.info(message)
+            Log().debug_logger.info(message)
         if os.path.exists(output_file):
             logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))
         else:

@@ -13,12 +13,8 @@ base = os.path.dirname(os.path.realpath(__file__))
 log_path = os.path.join(base, 'log')
 if not os.path.exists(log_path):
     os.mkdir(log_path)
-log_file = os.path.join(log_path, 'log.log')
 stream_log_file = os.path.join(log_path, 'stream.log')
 ffmpeg_log_file = os.path.join(log_path, 'ffmpeg.log')
-if not os.path.exists(log_file):
-    with open(log_file, 'w', encoding='utf-8') as a:
-        pass
 if not os.path.exists(stream_log_file):
     with open(stream_log_file, 'w', encoding='utf-8') as a:
         pass

@@ -14,6 +14,7 @@ from utils.load_conf import Config
 from utils.decoder import Decoder
 from utils.infos import Infos
 from utils.threadRecoder import threadRecorder
+from utils.history import  History
 from utils.bilibili_api import live
 if sys.platform == 'win32':
     from win10toast import ToastNotifier
@@ -66,7 +67,7 @@ class Live():
     def __init__(self):
         self.config = Config()
         self.cookies = login()
-        logger.info(self.cookies)
+        Log().debug_logger.info(self.cookies)
         self.base_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
                                       self.config.config['output']['path'])
         self.live_infos = Infos()
@@ -74,9 +75,10 @@ class Live():
         self.decoder = Decoder()
         self.uploader = Upload()
         self.threadRecorder = threadRecorder()
-        logger.info('基路径:%s' % (self.base_path))
+        Log().debug_logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
+        self.history = History()
         logger.info('初始化完成')
 
     def create_duration(self, start_time, end_time):
@@ -203,6 +205,7 @@ class Live():
             try:
                 if live_info['live_status'] != 1 and info['room_info']['live_status'] == 1:
                     logger.info('%s[RoomID:%s]开播了' % (live_info['uname'], id))
+                    self.history.add_info(id, 'live_status', '开始直播啦')
                     toaster = ToastNotifier()
                     toaster.show_toast("开播通知",
                                        '%s[RoomID:%s]开播了' % (live_info['uname'], id),
@@ -277,6 +280,7 @@ class Live():
             return None
         live_info = self.live_infos.copy()[key]
         logger.info('%s[RoomID:%s]似乎下播了' % (live_info['uname'], key))
+        self.history.add_info(key, 'live_status', '下播了')
         live_info['recording'] = 0
         logger.info('%s[RoomID:%s]录制结束，录制了%.2f分钟' % (live_info['uname'], key, (
                 datetime.datetime.now() - datetime.datetime.strptime(
