@@ -320,8 +320,7 @@ class Live():
             logger.error(e)
             return
         with open(filename, 'wb') as f:
-            while self.judge_in(key) and self.live_infos.get(key)['live_status'] == 1 and self.live_infos.get(key)[
-                'need_rec'] == '1' and self.check_live(key):
+            while self.judge_in(key) and self.judge_download(key) and self.check_live(key):
                 try:
                     data = fd.read(1024 * 8)
                     if len(data) > 0:
