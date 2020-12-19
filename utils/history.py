@@ -13,6 +13,8 @@ from utils.log import Log
 from utils.infos import Infos
 from utils.singleton import singleton
 
+logger = Log()()
+
 @singleton
 class History():
     def __init__(self):
@@ -20,7 +22,7 @@ class History():
         self.live_infos = Infos()
         self.base_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'history')
         self.init()
-        Log().debug_logger('History模块初始化完成')
+        logger.debug('History模块初始化完成')
 
     def init(self):
         if not os.path.exists(self.base_path):

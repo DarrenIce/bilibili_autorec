@@ -3,6 +3,7 @@ from pymediainfo import MediaInfo
 from utils.log import Log
 from utils.load_conf import Config
 from utils.threadRecoder import threadRecorder
+from utils.history import History
 from utils.infos import Infos
 import threading
 import os
@@ -24,6 +25,7 @@ class Queue():
         self.qname = ''
         self.func = lambda x:time.sleep(400)
         self.threadRecorder = threadRecorder()
+        self.history = History()
         self.base_num = 0
 
     def func_call(self, key):
@@ -32,10 +34,12 @@ class Queue():
             live_info = self.infos.copy()[key]
             live_info['queue_status'] = self.base_num
             self.infos.update(key, live_info)
+            self.history.add_info(key, 'queue_status', '开始%s' % self.qname)
             self.func(key)
             live_info['queue_status'] = self.base_num + 500
             live_info['finish_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             self.infos.update(key, live_info)
+            self.history.add_info(key, 'queue_status', '结束%s' % self.qname)
 
     def update_status(self):
         for key in self.queue:
@@ -50,10 +54,12 @@ class Queue():
             if key not in self.queue:
                 self.queue.append(key)
                 logger.info('%s 进入%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
+                self.history.add_info(key, 'queue_status', '进入%s等待队列' % self.qname)
             else:
                 self.queue.remove(key)
                 self.queue.append(key)
                 logger.info('%s 在%s等待队列中的状态更新了' % (self.infos.copy()[key]['uname'],self.qname))
+                self.history.add_info(key, 'queue_status', '在%s等待队列中的状态更新了' % self.qname)
             self.infos.update(key, live_info)
 
     def dequeue(self):
@@ -66,6 +72,7 @@ class Queue():
                     del self.queue[0]
                     self.update_status()
                     logger.info('%s 退出%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
+                    self.history.add_info(key, 'queue_status', '退出%s等待队列' % self.qname)
                     return key
                 else:
                     return None

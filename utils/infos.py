@@ -10,7 +10,7 @@ class Infos():
     def __init__(self):
         self.live_infos = {}
         self._lock = threading.Lock()
-        Log().debug_logger.info('数据结构初始化完成')
+        logger.info('数据结构初始化完成')
 
     def update(self, key, value):
         with self._lock:

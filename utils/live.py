@@ -1,10 +1,13 @@
 import os
 import sys
 import time
+import json
+import asyncio
 import platform
 import datetime
 import threading
 import streamlink
+import requests
 from utils.log import Log
 from utils.upload import Upload
 from utils.tools import login
@@ -15,7 +18,6 @@ from utils.decoder import Decoder
 from utils.infos import Infos
 from utils.threadRecoder import threadRecorder
 from utils.history import  History
-from utils.bilibili_api import live
 if sys.platform == 'win32':
     from win10toast import ToastNotifier
 
@@ -67,7 +69,7 @@ class Live():
     def __init__(self):
         self.config = Config()
         self.cookies = login()
-        Log().debug_logger.info(self.cookies)
+        logger.info(self.cookies)
         self.base_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
                                       self.config.config['output']['path'])
         self.live_infos = Infos()
@@ -75,7 +77,7 @@ class Live():
         self.decoder = Decoder()
         self.uploader = Upload()
         self.threadRecorder = threadRecorder()
-        Log().debug_logger.info('基路径:%s' % (self.base_path))
+        logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
         self.history = History()
@@ -194,7 +196,8 @@ class Live():
             info = None
             while info is None:
                 try:
-                    info = live.get_room_info(id, cookies=self.cookies)
+                    r = requests.get('https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id=%s' % id)
+                    info = json.loads(r.text)['data']
                     time.sleep(0.3)
                 except:
                     logger.error('[RoomID:%s]获取信息失败，重新尝试' % (id))
@@ -324,7 +327,7 @@ class Live():
             logger.error(e)
             return
         with open(filename, 'wb') as f:
-            while self.judge_in(key) and self.judge_download(key) and self.check_live(key):
+            while self.judge_download(key) and self.check_live(key):
                 try:
                     data = fd.read(1024 * 8)
                     if len(data) > 0:
@@ -350,6 +353,8 @@ class Live():
         self.unlive(key, True)
 
     def run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         while True:
             time.sleep(1)
             self.load_realtime()
@@ -365,3 +370,4 @@ class Live():
         self.threadRecorder.add('decoder_run',self.decoder.run,None,False)
         self.threadRecorder.add('uploader_run',self.uploader.run,None,False)
         self.threadRecorder.add('live_run',self.run,None,False)
+        self.threadRecorder.add('history_run',self.history.heartbeat,None,False)

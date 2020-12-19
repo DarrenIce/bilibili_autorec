@@ -3,6 +3,7 @@ import subprocess
 import threading
 from apscheduler.schedulers.blocking import BlockingScheduler
 import datetime
+import asyncio
 import sys
 import platform
 if sys.platform == 'win32':
@@ -53,6 +54,8 @@ def daily_job():
                             print(a)
 
 def scheduler_run():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     scheduler = BlockingScheduler()
     scheduler.add_job(daily_job,'cron',day_of_week='0-6',hour=7,minute=1)
     scheduler.start()
