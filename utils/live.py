@@ -16,7 +16,6 @@ from utils.display import Display
 from utils.load_conf import Config
 from utils.decoder import Decoder
 from utils.infos import Infos
-from utils.threadRecoder import threadRecorder
 from utils.history import  History
 if sys.platform == 'win32':
     from win10toast import ToastNotifier
@@ -76,7 +75,6 @@ class Live():
         self.display = Display()
         self.decoder = Decoder()
         self.uploader = Upload()
-        self.threadRecorder = threadRecorder()
         logger.info('基路径:%s' % (self.base_path))
         self.load_room_info()
         self.get_live_url()
@@ -144,18 +142,16 @@ class Live():
         '''
         实时加载配置，更新房间信息
         '''
-        while True:
-            self.config.load_cfg()
-            # logger.info(self.config.config)
-            room_lst = [i[0] for i in self.config.config['live']['room_info']]
-            del_lst = []
-            for key in self.live_infos.copy():
-                if key not in room_lst:
-                    del_lst.append(key)
-            for key in del_lst:
-                self.live_infos.delete(key)
-            self.load_room_info()
-            time.sleep(1)
+        self.config.load_cfg()
+        # logger.info(self.config.config)
+        room_lst = [i[0] for i in self.config.config['live']['room_info']]
+        del_lst = []
+        for key in self.live_infos.copy():
+            if key not in room_lst:
+                del_lst.append(key)
+        for key in del_lst:
+            self.live_infos.delete(key)
+        self.load_room_info()
 
     def judge_in(self, key):
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
@@ -318,6 +314,7 @@ class Live():
             return
         filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
         live_info['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.live_infos.update(key,live_info)
         try:
             fd = stream.open()
         except Exception as e:
@@ -355,23 +352,17 @@ class Live():
         self.live_infos.update(key,live_info)
         self.unlive(key, True)
 
-    def run(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    def start(self):
+        threading.Thread(target=self.display.run).start()
+        threading.Thread(target=self.decoder.run).start()
+        threading.Thread(target=self.uploader.run).start()
+        threading.Thread(target=self.history.heartbeat).start()
         while True:
+            self.load_realtime()
+            self.get_live_url()
+            time.sleep(1)
             live_infos = self.live_infos.copy()
             for key in live_infos:
                 if live_infos[key]['recording'] != 1 and self.judge_download(key):
-                    self.threadRecorder.add('download_live_%s' % (key),self.download_live,[key,],False)
+                    threading.Thread(target=self.download_live, args=[key,]).start()
                 time.sleep(0.2)
-
-    def start(self):
-        self.threadRecorder.add('display_run',self.display.run,None,False)
-        self.threadRecorder.add('decoder_run',self.decoder.run,None,False)
-        self.threadRecorder.add('uploader_run',self.uploader.run,None,False)
-        self.threadRecorder.add('live_run',self.run,None,False)
-        self.threadRecorder.add('history_run',self.history.heartbeat,None,False)
-        self.threadRecorder.add('load_realtime',self.load_realtime,None,False)
-        while True:
-            self.get_live_url()
-            time.sleep(1)

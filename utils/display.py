@@ -59,7 +59,7 @@ class Info:
         if self.record_status == 1:
             return '[bold spring_green1]录制中'
         elif self.record_status == 0:
-            return '[bold hot_pink3]未开播'
+            return '[bold hot_pink3]未录制'
         elif self.record_status == 2:
             return '[bold salmon1]不在直播期间'
         elif self.record_status == 3:
