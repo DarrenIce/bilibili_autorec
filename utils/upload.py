@@ -36,7 +36,6 @@ class Upload(Queue):
             return False
 
     def upload(self, key):
-        time.sleep(300)
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
         if key not in room_lst:
             return None

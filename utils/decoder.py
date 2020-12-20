@@ -20,6 +20,23 @@ class Decoder(Queue):
         self.uploader = Upload()
         self.base_num = 1000
 
+    def check_live(self, key):
+        duration = self.infos.get(key)['duration']
+        if duration == '0':
+            return True
+        lst = duration.split('-')
+        now_time = datetime.datetime.now()
+        if len(lst) == 2:
+            start_time = datetime.datetime.strptime(lst[0], '%Y%m%d %H%M%S')
+            end_time = datetime.datetime.strptime(lst[1], '%Y%m%d %H%M%S')
+            if now_time > start_time and now_time < end_time:
+                return True
+            else:
+                logger.debug('%s[RoomID:%s]不在直播时间段' % (self.infos.get(key)['uname'], key))
+                return False
+        else:
+            return False
+
     def decode(self, key):
         '''
         当前逻辑是
@@ -27,10 +44,16 @@ class Decoder(Queue):
         先把每个flv转ts，再ts合MP4
         最后给视频加黑色遮挡
         '''
+        time.sleep(300)
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
         if key not in room_lst:
             return None
         live_info = self.infos.copy()[key]
+        if live_info['live_status'] == 1 and self.check_live(key):
+            logger.info('%s[RoomID:%s]直播中，暂不转码' % (live_info['uname'], live_info['room_id']))
+            live_info['queue_status'] = 0
+            self.infos.update(key,live_info)
+            return None
         save_path = os.path.join(live_info['base_path'], live_info['uname'])
         time_lst = []
         flst = []
@@ -89,7 +112,7 @@ class Decoder(Queue):
                 '-y', o
             ]
             # print(' '.join(command))
-            message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
+            message = subprocess.run(command, stdout=open(ffmpeg_log, 'w'), stderr=open(ffmpeg_log, 'a'))
             logger.info(message)
 
         flag = False
@@ -120,7 +143,7 @@ class Decoder(Queue):
                 '-c', 'copy',
                 '-y', output_file
             ]
-        message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'))
+        message = subprocess.run(command, stdout=open(ffmpeg_log, 'w'), stderr=open(ffmpeg_log, 'a'))
         logger.info(message)
 
         for tsop in output_lst:
@@ -149,7 +172,7 @@ class Decoder(Queue):
                 '-y',
                 output_file2
             ]
-            message = subprocess.run(command, stdout=open(ffmpeg_log, 'a'), stderr=open(ffmpeg_log, 'a'),timeout=3600)
+            message = subprocess.run(command, stdout=open(ffmpeg_log, 'w'), stderr=open(ffmpeg_log, 'a'),timeout=3600)
             logger.info(message)
         if os.path.exists(output_file):
             logger.info('%s[RoomID:%s]转码完成' % (live_info['uname'], live_info['room_id']))

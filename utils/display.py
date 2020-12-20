@@ -1,9 +1,9 @@
 import time
 import datetime
-from utils.rich.live import Live
-from utils.rich.table import Table
-from utils.rich.console import Console
-from utils.rich import box
+from rich.live import Live
+from rich.table import Table
+from rich.console import Console
+from rich import box
 from rich.console import RenderGroup
 from utils.infos import Infos
 from utils.log import Log
@@ -49,6 +49,8 @@ class Info:
             return '[bold spring_green1]直播中'
         elif self.live_status == 2:
             return '[bold sky_blue2]轮播中'
+        elif self.live_status == 4:
+            return '[indian_red1]封禁中'
         else:
             return '[bold hot_pink3]未开播'
 
@@ -66,7 +68,7 @@ class Info:
     @property
     def record_time(self) -> str:
         if self.record_start_time != '':
-            return '[misty_rose1]%s' % str((datetime.datetime.now() - datetime.datetime.strptime(self.record_start_time,'%Y-%m-%d %H:%M:%S')))
+            return '[misty_rose1]%s' % str((datetime.datetime.now() - datetime.datetime.strptime(self.record_start_time,'%Y-%m-%d %H:%M:%S'))).split('.')[0]
         else:
             return '[misty_rose1]0s'
 
@@ -127,7 +129,7 @@ class Display():
         return info
 
     def create_info_table(self, live_infos):
-        dct = {0: 0, 1: 100, 2: 50}
+        dct = {0: 0, 1: 100, 2: 50, 4: 10}
         dct2 = {0: 0, 1: 100, 2: 50, 3: 30}
         infos = sorted(
             [self.generate_info(rid, live_infos[key]) for key, rid in

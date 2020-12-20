@@ -23,7 +23,7 @@ def daily_job():
         name = live_infos[key]['uname']
         base_path = os.path.join(local_base_path,name)
         if os.path.exists(base_path):
-            a = subprocess.run([PCSpath,"cd",pcs_base_path % name])
+            a = subprocess.run([PCSpath,"mkdir",pcs_base_path % name])
             print(a)
             print(base_path)
             for f in os.listdir(base_path):
@@ -33,7 +33,7 @@ def daily_job():
                         print(x)
                         print((datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d'))
                         if (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y%m%d') == x:
-                            # a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
+                            a = subprocess.run([PCSpath,'upload',os.path.join(base_path,f),pcs_base_path % name])
                             print(a)
 
 # def test():

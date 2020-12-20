@@ -51,6 +51,7 @@ class Queue():
         with self._lock:
             live_info = self.infos.copy()[key]
             live_info['queue_status'] = self.base_num + len(self.queue) + 1
+            self.infos.update(key, live_info)
             if key not in self.queue:
                 self.queue.append(key)
                 logger.info('%s 进入%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
@@ -60,7 +61,7 @@ class Queue():
                 self.queue.append(key)
                 logger.info('%s 在%s等待队列中的状态更新了' % (self.infos.copy()[key]['uname'],self.qname))
                 self.history.add_info(key, 'queue_status', '在%s等待队列中的状态更新了' % self.qname)
-            self.infos.update(key, live_info)
+            
 
     def dequeue(self):
         if self._lock2.locked():

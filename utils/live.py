@@ -11,7 +11,7 @@ import requests
 from utils.log import Log
 from utils.upload import Upload
 from utils.tools import login
-from utils.rich.console import Console
+from rich.console import Console
 from utils.display import Display
 from utils.load_conf import Config
 from utils.decoder import Decoder
@@ -61,7 +61,7 @@ TODO:
 √   加一个CPU、内存、网络占用显示
 √   singleton queue 消息队列
 √   加一个线程的心跳监控，可以看到有哪些线程是在运行的，如果有线程挂了也能看出来
-添加在上传队列、转码队列情况的终端输出
+√   添加在上传队列、转码队列情况的终端输出
 '''
 
 
@@ -115,7 +115,7 @@ class Live():
             if now_time > start_time and now_time < end_time:
                 return True
             else:
-                logger.debug('%s[RoomID:%s]不在直播时间段' % (self.live_infos.get(key)['uname'], key))
+                # logger.debug('%s[RoomID:%s]不在直播时间段' % (self.live_infos.get(key)['uname'], key))
                 return False
         else:
             return False
@@ -144,16 +144,18 @@ class Live():
         '''
         实时加载配置，更新房间信息
         '''
-        self.config.load_cfg()
-        # logger.info(self.config.config)
-        room_lst = [i[0] for i in self.config.config['live']['room_info']]
-        del_lst = []
-        for key in self.live_infos.copy():
-            if key not in room_lst:
-                del_lst.append(key)
-        for key in del_lst:
-            self.live_infos.delete(key)
-        self.load_room_info()
+        while True:
+            self.config.load_cfg()
+            # logger.info(self.config.config)
+            room_lst = [i[0] for i in self.config.config['live']['room_info']]
+            del_lst = []
+            for key in self.live_infos.copy():
+                if key not in room_lst:
+                    del_lst.append(key)
+            for key in del_lst:
+                self.live_infos.delete(key)
+            self.load_room_info()
+            time.sleep(1)
 
     def judge_in(self, key):
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
@@ -165,6 +167,8 @@ class Live():
         if not self.judge_in(key):
             return False
         live_info = self.live_infos.copy()[key]
+        if 'live_status' not in live_info:
+            return False
         if live_info['live_status'] != 1:
             live_info['recording'] =0
             self.live_infos.update(key,live_info)
@@ -202,7 +206,10 @@ class Live():
                 except:
                     logger.error('[RoomID:%s]获取信息失败，重新尝试' % (id))
                     continue
-            live_info = self.live_infos.copy()[id]
+            try:
+                live_info = self.live_infos.copy()[id]
+            except:
+                continue
             live_info['room_id'] = id
             live_info['real_id'] = info['room_info']['room_id']
             try:
@@ -218,6 +225,8 @@ class Live():
                 pass
             try:
                 live_info['live_status'] = info['room_info']['live_status']
+                if info['room_info']['lock_status'] == 1:
+                    live_info['live_status'] = 4
                 live_info['uid'] = info['room_info']['uid']
                 live_info['uname'] = info['anchor_info']['base_info']['uname']
                 live_info['save_name'] = '%s_%s.flv' % (
@@ -225,8 +234,7 @@ class Live():
                 live_info['title'] = info['room_info']['title']
                 live_info['live_start_time'] = info['room_info']['live_start_time']
                 self.live_infos.update(id,live_info)
-                logger.debug(
-                    '%s[RoomID:%s]直播状态\t%s' % (live_info['uname'], id, live_info['live_status']))
+                # logger.debug('%s[RoomID:%s]直播状态\t%s' % (live_info['uname'], id, live_info['live_status']))
             except Exception as e:
                 logger.critical(e)
                 logger.error('[RoomID:%s]房间信息更新失败' % (id))
@@ -246,9 +254,6 @@ class Live():
         session = streamlink.Streamlink()
         session.set_option("http-cookies", self.cookies)
         session.set_option("http-headers", headers)
-        # log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'log', 'stream.log')
-        # session.set_loglevel("debug")
-        # session.set_logoutput(open(log_path, 'a',encoding='utf-8'))
         streams = None
         retry = 0
         while streams is None:
@@ -285,43 +290,38 @@ class Live():
         logger.info('%s[RoomID:%s]似乎下播了' % (live_info['uname'], key))
         self.history.add_info(key, 'live_status', '下播了')
         live_info['recording'] = 0
-        logger.info('%s[RoomID:%s]录制结束，录制了%.2f分钟' % (live_info['uname'], key, (
-                datetime.datetime.now() - datetime.datetime.strptime(
-            live_info['record_start_time'],
-            '%Y-%m-%d %H:%M:%S')).total_seconds() / 60.0))
+        logger.info('%s[RoomID:%s]录制结束，录制了%.2f分钟' % (live_info['uname'], key, (datetime.datetime.now() - datetime.datetime.strptime(live_info['record_start_time'],'%Y-%m-%d %H:%M:%S')).total_seconds() / 60.0))
         live_info['record_start_time'] = ''
         if unlived:
             logger.info('%s[RoomID:%s]确认下播，加入转码上传队列' % (live_info['uname'], key))
-            # if live_info['need_upload'] == '1':
-            #     live_info['filename'] = live_info['uname'] + live_info['duration'].split('-')[0].split(' ')[0]
-            #     live_info['filepath'] = os.path.join(self.base_path, live_info['uname'], '%s_%s' % (live_info['uname'], live_info['duration'].split('-')[0].split(' ')[0]))
-            #     if live_info['need_mask'] == '1':
-            #         live_info['filepath'] += '_mask.mp4'
-            #     else:
-            #         live_info['filepath'] += '.mp4'
             self.decoder.enqueue(key)
         self.live_infos.update(key,live_info)    
 
     def download_live(self, key):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         if not self.judge_in(key):
             return None
         save_path = os.path.join(self.base_path, self.live_infos.get(key)['uname'], 'recording')
         logger.info('%s[RoomID:%s]准备下载直播流,保存在%s' % (self.live_infos.get(key)['uname'], key, save_path))
-        self.live_infos.get(key)['recording'] = 1
+        live_info = self.live_infos.get(key)
+        live_info['recording'] = 1
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
         stream = self.get_stream(key)
         if stream is None:
             logger.error('%s[RoomID:%s]获取直播流失败' % (self.live_infos.get(key)['uname'], key))
-            self.live_infos.get(key)['record_start_time'] = ''
-            self.live_infos.get(key)['recording'] = 0
+            live_info['record_start_time'] = ''
+            live_info['recording'] = 0
+            self.live_infos.update(key,live_info)
             return
         filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
-        self.live_infos.get(key)['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        live_info['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         try:
             fd = stream.open()
         except Exception as e:
+            self.live_infos.update(key,live_info)
             self.unlive(key,unlived=False)
             logger.critical('%s[RoomID:%s]fd open error' % (self.live_infos.get(key)['uname'], key))
             logger.error(e)
@@ -338,6 +338,7 @@ class Live():
                         stream = self.get_stream(key)
                         if stream is None:
                             logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos.get(key)['uname'], key))
+                            self.live_infos.update(key,live_info)
                             self.unlive(key, True)
                             return
                         else:
@@ -345,20 +346,19 @@ class Live():
                             fd = stream.open()
                 except Exception as e:
                     fd.close()
+                    self.live_infos.update(key,live_info)
                     self.unlive(key,unlived=False)
                     logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos.get(key)['uname'], key))
                     logger.error(e)
                     return
         fd.close()
+        self.live_infos.update(key,live_info)
         self.unlive(key, True)
 
     def run(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         while True:
-            time.sleep(1)
-            self.load_realtime()
-            self.get_live_url()
             live_infos = self.live_infos.copy()
             for key in live_infos:
                 if live_infos[key]['recording'] != 1 and self.judge_download(key):
@@ -371,3 +371,7 @@ class Live():
         self.threadRecorder.add('uploader_run',self.uploader.run,None,False)
         self.threadRecorder.add('live_run',self.run,None,False)
         self.threadRecorder.add('history_run',self.history.heartbeat,None,False)
+        self.threadRecorder.add('load_realtime',self.load_realtime,None,False)
+        while True:
+            self.get_live_url()
+            time.sleep(1)

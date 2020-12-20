@@ -25,7 +25,7 @@ class Infos():
 
     def get(self,key):
         with self._lock:
-            return self.live_infos[key]
+            return copy.deepcopy(self.live_infos[key])
 
     def copy(self):
         return copy.deepcopy(self.live_infos)
