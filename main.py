@@ -1,7 +1,6 @@
 import os
 import threading
 import datetime
-import asyncio
 import sys
 import platform
 if sys.platform == 'win32':

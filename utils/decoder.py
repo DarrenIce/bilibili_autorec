@@ -44,7 +44,7 @@ class Decoder(Queue):
         先把每个flv转ts，再ts合MP4
         最后给视频加黑色遮挡
         '''
-        time.sleep(300)
+        time.sleep(600)
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
         if key not in room_lst:
             return None

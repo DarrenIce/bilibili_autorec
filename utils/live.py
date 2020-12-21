@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import json
-import asyncio
 import platform
 import datetime
 import threading
@@ -294,8 +293,6 @@ class Live():
         self.live_infos.update(key,live_info)    
 
     def download_live(self, key):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         if not self.judge_in(key):
             return None
         save_path = os.path.join(self.base_path, self.live_infos.get(key)['uname'], 'recording')
@@ -358,11 +355,15 @@ class Live():
         threading.Thread(target=self.uploader.run).start()
         threading.Thread(target=self.history.heartbeat).start()
         while True:
-            self.load_realtime()
-            self.get_live_url()
-            time.sleep(1)
-            live_infos = self.live_infos.copy()
-            for key in live_infos:
-                if live_infos[key]['recording'] != 1 and self.judge_download(key):
-                    threading.Thread(target=self.download_live, args=[key,]).start()
-                time.sleep(0.2)
+            try:
+                self.load_realtime()
+                self.get_live_url()
+                time.sleep(1)
+                live_infos = self.live_infos.copy()
+                for key in live_infos:
+                    if live_infos[key]['recording'] != 1 and self.judge_download(key):
+                        threading.Thread(target=self.download_live, args=[key,]).start()
+                    time.sleep(0.2)
+            except Exception as e:
+                logger.critical(e)
+                continue

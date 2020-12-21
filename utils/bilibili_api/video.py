@@ -1009,13 +1009,7 @@ def video_upload(path: str, cookies, on_progress=None):
                     if on_progress:
                         on_progress({"event": "VERIFY", "ok": False, "data": None})
                     raise exceptions.UploadException('视频上传失败')
-    loop = asyncio.new_event_loop()
-    executor = concurrent.futures.ThreadPoolExecutor(5)
-    loop.set_default_executor(executor)
-    asyncio.set_event_loop(loop)
-    r = asyncio.get_event_loop().run_until_complete(main())
-    executor.shutdown(wait=True)
-    loop.close()
+    r = asyncio.run(main())
     return r
 
 
