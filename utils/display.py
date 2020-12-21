@@ -185,8 +185,12 @@ class Display():
         # self.console.clear()
         with Live(console=self.console, auto_refresh=False) as live:
             while True:
-                live.update(self.create_info_table(self.live_infos.copy()), refresh=True)
-                time.sleep(1)
+                try:
+                    live.update(self.create_info_table(self.live_infos.copy()), refresh=True)
+                    time.sleep(1)
+                except Exception as e:
+                    logger.critical(e)
+                    continue
 
 def bytes2human(n):
      symbols = ('K','M','G','T','P','E','Z','Y')

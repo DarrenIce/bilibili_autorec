@@ -293,61 +293,64 @@ class Live():
         self.live_infos.update(key,live_info)    
 
     def download_live(self, key):
-        if not self.judge_in(key):
-            return None
-        save_path = os.path.join(self.base_path, self.live_infos.get(key)['uname'], 'recording')
-        logger.info('%s[RoomID:%s]准备下载直播流,保存在%s' % (self.live_infos.get(key)['uname'], key, save_path))
-        live_info = self.live_infos.get(key)
-        live_info['recording'] = 1
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-
-        stream = self.get_stream(key)
-        if stream is None:
-            logger.error('%s[RoomID:%s]获取直播流失败' % (self.live_infos.get(key)['uname'], key))
-            live_info['record_start_time'] = ''
-            live_info['recording'] = 0
-            self.live_infos.update(key,live_info)
-            return
-        filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
-        live_info['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        self.live_infos.update(key,live_info)
         try:
-            fd = stream.open()
-        except Exception as e:
+            if not self.judge_in(key):
+                return None
+            save_path = os.path.join(self.base_path, self.live_infos.get(key)['uname'], 'recording')
+            logger.info('%s[RoomID:%s]准备下载直播流,保存在%s' % (self.live_infos.get(key)['uname'], key, save_path))
+            live_info = self.live_infos.get(key)
+            live_info['recording'] = 1
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+
+            stream = self.get_stream(key)
+            if stream is None:
+                logger.error('%s[RoomID:%s]获取直播流失败' % (self.live_infos.get(key)['uname'], key))
+                live_info['record_start_time'] = ''
+                live_info['recording'] = 0
+                self.live_infos.update(key,live_info)
+                return
+            filename = os.path.join(save_path, self.live_infos.get(key)['save_name'])
+            live_info['record_start_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             self.live_infos.update(key,live_info)
-            self.unlive(key,unlived=False)
-            logger.critical('%s[RoomID:%s]fd open error' % (self.live_infos.get(key)['uname'], key))
-            logger.error(e)
-            return
-        with open(filename, 'wb') as f:
-            while self.judge_download(key) and self.check_live(key):
-                try:
-                    data = fd.read(1024 * 8)
-                    if len(data) > 0:
-                        f.write(data)
-                    else:
-                        fd.close()
-                        logger.warning('%s[RoomID:%s]直播流断开,尝试重连' % (self.live_infos.get(key)['uname'], key))
-                        stream = self.get_stream(key)
-                        if stream is None:
-                            logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos.get(key)['uname'], key))
-                            self.live_infos.update(key,live_info)
-                            self.unlive(key, True)
-                            return
+            try:
+                fd = stream.open()
+            except Exception as e:
+                self.live_infos.update(key,live_info)
+                self.unlive(key,unlived=False)
+                logger.critical('%s[RoomID:%s]fd open error' % (self.live_infos.get(key)['uname'], key))
+                logger.error(e)
+                return
+            with open(filename, 'wb') as f:
+                while self.judge_download(key) and self.check_live(key):
+                    try:
+                        data = fd.read(1024 * 8)
+                        if len(data) > 0:
+                            f.write(data)
                         else:
-                            logger.info('%s[RoomID:%s]重连成功' % (self.live_infos.get(key)['uname'], key))
-                            fd = stream.open()
-                except Exception as e:
-                    fd.close()
-                    self.live_infos.update(key,live_info)
-                    self.unlive(key,unlived=False)
-                    logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos.get(key)['uname'], key))
-                    logger.error(e)
-                    return
-        fd.close()
-        self.live_infos.update(key,live_info)
-        self.unlive(key, True)
+                            fd.close()
+                            logger.warning('%s[RoomID:%s]直播流断开,尝试重连' % (self.live_infos.get(key)['uname'], key))
+                            stream = self.get_stream(key)
+                            if stream is None:
+                                logger.warning('%s[RoomID:%s]重连失败' % (self.live_infos.get(key)['uname'], key))
+                                self.live_infos.update(key,live_info)
+                                self.unlive(key, True)
+                                return
+                            else:
+                                logger.info('%s[RoomID:%s]重连成功' % (self.live_infos.get(key)['uname'], key))
+                                fd = stream.open()
+                    except Exception as e:
+                        fd.close()
+                        self.live_infos.update(key,live_info)
+                        self.unlive(key,unlived=False)
+                        logger.critical('%s[RoomID:%s]遇到了什么问题' % (self.live_infos.get(key)['uname'], key))
+                        logger.error(e)
+                        return
+            fd.close()
+            self.live_infos.update(key,live_info)
+            self.unlive(key, True)
+        except Exception as e:
+            logger.critical(e)
 
     def start(self):
         threading.Thread(target=self.display.run).start()

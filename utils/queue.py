@@ -79,13 +79,21 @@ class Queue():
     def run(self):
         threading.Thread(target=self.heartbeat, daemon=True).start()
         while True:
-            time.sleep(1)
-            if len(self.queue) > 0:
-                key = self.dequeue()
-                if key is not None:
-                    threading.Thread(target=self.func_call, args=[key,]).start()
+            try:
+                time.sleep(1)
+                if len(self.queue) > 0:
+                    key = self.dequeue()
+                    if key is not None:
+                        threading.Thread(target=self.func_call, args=[key,]).start()
+            except Exception as e:
+                logger.critical(e)
+                continue
 
     def heartbeat(self):
         while True:
-            time.sleep(180)
-            logger.info('当前%s队列情况: %s' % (self.qname, ' '.join([self.infos.copy()[key]['uname'] for key in self.queue])))
+            try:
+                time.sleep(180)
+                logger.info('当前%s队列情况: %s' % (self.qname, ' '.join([self.infos.copy()[key]['uname'] for key in self.queue])))
+            except Exception as e:
+                logger.critical(e)
+                continue

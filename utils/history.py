@@ -42,17 +42,20 @@ class History():
 
     def heartbeat(self):
         while True:
-            time.sleep(600)
-            self.init()
-            for key in self.live_infos.copy():
-                history_file = os.path.join(self.base_path, '%s_%s' % (key, self.live_infos.get(key)['uname']))
-                with self._lock:
-                    with open(history_file, 'a', encoding='utf-8') as a:
-                        a.write('####✨ 当前时间: %s\n' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-                        a.write('录制时段: %s\n' % (self.live_infos.get(key)['duration']))
-                        a.write('直播状态: %s\n' % (self.live_infos.get(key)['live_status']))
-                        a.write('录制状态: %s\n' % (self.live_infos.get(key)['recording']))
-                        a.write('是否录制: %s\n' % (self.live_infos.get(key)['need_rec']))
-                        a.write('是否遮挡: %s\n' % (self.live_infos.get(key)['need_mask']))
-                        a.write('是否上传: %s\n' % (self.live_infos.get(key)['need_upload']))
-                        
+            try:
+                time.sleep(600)
+                self.init()
+                for key in self.live_infos.copy():
+                    history_file = os.path.join(self.base_path, '%s_%s' % (key, self.live_infos.get(key)['uname']))
+                    with self._lock:
+                        with open(history_file, 'a', encoding='utf-8') as a:
+                            a.write('####✨ 当前时间: %s\n' % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+                            a.write('录制时段: %s\n' % (self.live_infos.get(key)['duration']))
+                            a.write('直播状态: %s\n' % (self.live_infos.get(key)['live_status']))
+                            a.write('录制状态: %s\n' % (self.live_infos.get(key)['recording']))
+                            a.write('是否录制: %s\n' % (self.live_infos.get(key)['need_rec']))
+                            a.write('是否遮挡: %s\n' % (self.live_infos.get(key)['need_mask']))
+                            a.write('是否上传: %s\n' % (self.live_infos.get(key)['need_upload']))
+            except Exception as e:
+                logger.critical(e)
+                continue                   
