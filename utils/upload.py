@@ -40,7 +40,7 @@ class Upload(Queue):
         if key not in room_lst:
             return None
         live_info = self.infos.copy()[key]
-        if live_info['live_status'] == 1 and self.check_live(key):
+        if self.infos.get(key)['live_status'] == 1 and self.check_live(key):
             logger.info('%s[RoomID:%s]直播中，暂不上传' % (live_info['uname'], live_info['room_id']))
             live_info['queue_status'] = 0
             self.infos.update(key,live_info)

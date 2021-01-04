@@ -111,19 +111,22 @@ class Display():
         info = None
         while info is None:
             try:
-                info = Info(
-                    row_id=row_id,
-                    room_id=live_info['room_id'],
-                    anchor=live_info['uname'],
-                    title=live_info['title'],
-                    live_status=live_info['live_status'],
-                    record_status=live_info['recording'],
-                    start_time=datetime.datetime.fromtimestamp(live_info['live_start_time']).strftime(
-                        '%Y-%m-%d %H:%M:%S'),
-                    record_start_time=live_info['record_start_time'],
-                    queue_status=live_info['queue_status'],
-                    finish_time = live_info['finish_time']
-                )
+                if live_info is not None and 'live_status' in live_info:
+                    info = Info(
+                        row_id=row_id,
+                        room_id=live_info['room_id'],
+                        anchor=live_info['uname'],
+                        title=live_info['title'],
+                        live_status=live_info['live_status'],
+                        record_status=live_info['recording'],
+                        start_time=datetime.datetime.fromtimestamp(live_info['live_start_time']).strftime(
+                            '%Y-%m-%d %H:%M:%S'),
+                        record_start_time=live_info['record_start_time'],
+                        queue_status=live_info['queue_status'],
+                        finish_time = live_info['finish_time']
+                    )
+                else:
+                    break
             except Exception as e:
                 continue
         return info

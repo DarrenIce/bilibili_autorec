@@ -34,6 +34,7 @@ class Queue():
             self.infos.update(key, live_info)
             self.history.add_info(key, 'queue_status', '开始%s' % self.qname)
             self.func(key)
+            live_info = self.infos.copy()[key]
             live_info['queue_status'] = self.base_num + 500
             live_info['finish_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             self.infos.update(key, live_info)
@@ -50,6 +51,7 @@ class Queue():
             live_info = self.infos.copy()[key]
             live_info['queue_status'] = self.base_num + len(self.queue) + 1
             self.infos.update(key, live_info)
+            # 这里有问题 update完会导致recording_time回0
             if key not in self.queue:
                 self.queue.append(key)
                 logger.info('%s 进入%s等待队列' % (self.infos.copy()[key]['uname'],self.qname))
