@@ -44,16 +44,26 @@ class Decoder(Queue):
         先把每个flv转ts，再ts合MP4
         最后给视频加黑色遮挡
         '''
-        time.sleep(600)
+        max_time = 120
+        try_time = 0
         room_lst = [i[0] for i in self.config.config['live']['room_info']]
         if key not in room_lst:
             return None
-        live_info = self.infos.copy()[key]
-        if live_info['live_status'] == 1 and self.check_live(key):
+
+        while try_time < max_time:
+            live_info = self.infos.copy()[key]
+            if live_info['live_status'] == 1 and self.check_live(key):
+                try_time += 1
+                time.sleep(5)
+            else:
+                break
+        
+        if try_time >= max_time:
             logger.info('%s[RoomID:%s]直播中，暂不转码' % (live_info['uname'], live_info['room_id']))
             live_info['queue_status'] = 0
             self.infos.update(key,live_info)
             return None
+
         save_path = os.path.join(live_info['base_path'], live_info['uname'])
         time_lst = []
         flst = []
@@ -146,6 +156,17 @@ class Decoder(Queue):
         message = subprocess.run(command, stdout=open(ffmpeg_log, 'w'), stderr=open(ffmpeg_log, 'a'))
         logger.info(message)
 
+        command = [
+            ffmpeg_path,
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', file_path, 
+            '-vn',
+            '-acodec', 'copy',
+            '-y', output_file.replace('.mp4', '.m4a')
+        ]
+        message = subprocess.run(command)
+
         for tsop in output_lst:
             try:
                 os.remove(tsop)
@@ -179,9 +200,9 @@ class Decoder(Queue):
         else:
             logger.error('%s[RoomID:%s]转码失败' % (live_info['uname'], live_info['room_id']))
         self.infos.update(key,live_info)
-        if live_info['need_upload'] == '1':
-            dura = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][0]['duration']
-            if dura >= 7200000:
-                self.uploader.enqueue(key)
-            else:
-                logger.error('%s[RoomID:%s]录制时长不足' % (live_info['uname'], live_info['room_id']))
+        # if live_info['need_upload'] == '1':
+        #     dura = json.loads(MediaInfo.parse(output_file).to_json())['tracks'][0]['duration']
+        #     if dura >= 7200000:
+        #         self.uploader.enqueue(key)
+        #     else:
+        #         logger.error('%s[RoomID:%s]录制时长不足' % (live_info['uname'], live_info['room_id']))
