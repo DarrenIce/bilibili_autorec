@@ -7,7 +7,6 @@ from rich import box
 from rich.console import RenderGroup
 from utils.infos import Infos
 from utils.log import Log
-from typing_extensions import Literal
 from dataclasses import dataclass
 import threading
 import psutil

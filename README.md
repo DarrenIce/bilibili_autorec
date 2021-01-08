@@ -2,6 +2,7 @@
 
 ## README基本完工
 
+本项目已停止维护，请移步go的重构版本[bilibili-recording-go](https://github.com/DarrenIce/bilibili-recording-go)
 目前发现在python3.9下无法运行，请选择3.8及以前的python版本尝试
 
 ## 功能

@@ -86,6 +86,7 @@ class Bilibili:
         salt = "60698ba2f68e01ce44738920a0ffe768"
         sign_hash = hashlib.md5()
         sign_hash.update(f"{param}{salt}".encode())
+        print(sign_hash.hexdigest())
         return sign_hash.hexdigest()
 
     def set_proxy(self, add=None):
@@ -161,6 +162,8 @@ class Bilibili:
                 while True:
                     response = self._requests("post", url, data=payload)
                     if response and response.get("code") == 0:
+                        print(response['data']['hash'])
+                        print(response['data']['key'])
                         return {
                             'key_hash': response['data']['hash'],
                             'pub_key': rsa.PublicKey.load_pkcs1_openssl_pem(response['data']['key'].encode()),
@@ -202,6 +205,8 @@ class Bilibili:
                             url = f"{self.protocol}://passport.bilibili.com/api/v3/oauth2/login"
                             param = f"access_key=&actionKey=appkey&appkey={Bilibili.app_key}&build=6040500&captcha=&challenge=&channel=bili&cookies=&device=phone&mobi_app=android&password={parse.quote_plus(base64.b64encode(rsa.encrypt(f'{key_hash}{self.password}'.encode(), pub_key)))}&permission=ALL&platform=android&seccode=&subid=1&ts={int(time.time())}&username={parse.quote_plus(self.username)}&validate="
                             payload = f"{param}&sign={self.calc_sign(param)}"
+                            # print(payload)
+                            # time.sleep(10)
                             headers = {'Content-type': "application/x-www-form-urlencoded"}
                             response = self._requests("post", url, data=payload, headers=headers)
                         elif response['code'] == 0 and response['data']['status'] == 0:
@@ -275,3 +280,5 @@ def login():
     bili = Bilibili(config['global']['https'])
     bili.login(force_refresh_token=config['user']['force_refresh_token'], **account)
     return bili.get_cookies()
+    # print(bili.calc_sign("access_key=&actionKey=appkey&appkey=bca7e84c2d947ac6&build=6040500&captcha=&challenge=&channel=bili&cookies=&device=phone&mobi_app=android&password=142X5vTW58+mt980voPYEWGzgfPEK8lYawvH17wB+kIKOn29ROExV2oGLDfVnap+1EBXT8Dl1ML5BQormCWsPmhWa7wco5ZsBEKKmQD93UduYGcpN3u2G2e5WNzh6ucaTaW646fGtMh9VTAlACr8COrmcBPjwReNWhjGlV6QWMc=&permission=ALL&platform=android&seccode=&subid=1&ts=1609310161&username=13261766699&validate="))
+    # print(bili.calc_sign("access_key=&actionKey=appkey&appkey=bca7e84c2d947ac6&build=6040500&captcha=&challenge=&channel=bili&cookies=&device=phone&mobi_app=android&password=142X5vTW58%2Bmt980voPYEWGzgfPEK8lYawvH17wB%2BkIKOn29ROExV2oGLDfVnap%2B1EBXT8Dl1ML5BQormCWsPmhWa7wco5ZsBEKKmQD93UduYGcpN3u2G2e5WNzh6ucaTaW646fGtMh9VTAlACr8COrmcBPjwReNWhjGlV6QWMc%3D&permission=ALL&platform=android&seccode=&subid=1&ts=1609310161&username=13261766699&validate="))
